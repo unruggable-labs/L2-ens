@@ -4,7 +4,7 @@ pragma solidity ~0.8.17;
 import {ERC1155Fuse, IERC1155MetadataURI} from "ens-contracts/wrapper/ERC1155Fuse.sol";
 import {Controllable} from "ens-contracts/wrapper/Controllable.sol";
 import {IL2NameWrapper, CANNOT_UNWRAP, CANNOT_BURN_FUSES, CANNOT_TRANSFER, CANNOT_SET_RESOLVER, CANNOT_SET_TTL, CANNOT_CREATE_SUBDOMAIN, CANNOT_APPROVE, PARENT_CANNOT_CONTROL, CAN_DO_EVERYTHING, IS_DOT_ETH, CAN_EXTEND_EXPIRY, PARENT_CONTROLLED_FUSES, USER_SETTABLE_FUSES} from "optimism/wrapper/IL2NameWrapper.sol";
-import {IL2NameWrapperUpgrade} from "optimism/wrapper/IL2NameWrapperUpgrade.sol";
+import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
 import {IReverseRegistrar} from "ens-contracts/reverseRegistrar/IReverseRegistrar.sol";
@@ -53,7 +53,7 @@ contract L2NameWrapper is
     bytes32 private constant ROOT_NODE =
         0x0000000000000000000000000000000000000000000000000000000000000000;
 
-    IL2NameWrapperUpgrade public upgradeContract;
+    INameWrapperUpgrade public upgradeContract;
     uint64 private constant MAX_EXPIRY = type(uint64).max;
 
     constructor(
@@ -203,7 +203,7 @@ contract L2NameWrapper is
      */
 
     function setUpgradeContract(
-        IL2NameWrapperUpgrade _upgradeAddress
+        INameWrapperUpgrade _upgradeAddress
     ) public onlyOwner {
         upgradeContract = _upgradeAddress;
     }

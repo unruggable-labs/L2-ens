@@ -1,11 +1,11 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
-import {IL2NameWrapperUpgrade} from "optimism/wrapper/IL2NameWrapperUpgrade.sol";
+import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
 import {IBaseRegistrar} from "ens-contracts/ethregistrar/IBaseRegistrar.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
 
-contract L2UpgradedNameWrapperMock is IL2NameWrapperUpgrade {
+contract L2UpgradedNameWrapperMock is INameWrapperUpgrade {
     using BytesUtils for bytes;
 
     bytes32 private constant ETH_NODE =

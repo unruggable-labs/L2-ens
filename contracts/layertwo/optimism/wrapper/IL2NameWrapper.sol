@@ -5,7 +5,7 @@ import "ens-contracts/registry/ENS.sol";
 import "ens-contracts/ethregistrar/IBaseRegistrar.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "ens-contracts/wrapper/IMetadataService.sol";
-import "contracts/layertwo/optimism/wrapper/IL2NameWrapperUpgrade.sol";
+import "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 
 uint32 constant CANNOT_UNWRAP = 1;
 uint32 constant CANNOT_BURN_FUSES = 2;
@@ -47,7 +47,7 @@ interface IL2NameWrapper is IERC1155 {
 
     function name() external view returns (string memory);
 
-    function upgradeContract() external view returns (IL2NameWrapperUpgrade);
+    function upgradeContract() external view returns (INameWrapperUpgrade);
 
     function supportsInterface(bytes4 interfaceID) external view returns (bool);
 
@@ -153,7 +153,7 @@ interface IL2NameWrapper is IERC1155 {
 
     function uri(uint256 tokenId) external view returns (string memory);
 
-    function setUpgradeContract(IL2NameWrapperUpgrade _upgradeAddress) external;
+    function setUpgradeContract(INameWrapperUpgrade _upgradeAddress) external;
 
     function allFusesBurned(
         bytes32 node,
