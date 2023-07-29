@@ -1,11 +1,11 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ~0.8.17;
 
-import "../registry/ENS.sol";
-import "../ethregistrar/IBaseRegistrar.sol";
+import "ens-contracts/registry/ENS.sol";
+import "ens-contracts/ethregistrar/IBaseRegistrar.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "./IMetadataService.sol";
-import "./INameWrapperUpgrade.sol";
+import "ens-contracts/wrapper/IMetadataService.sol";
+import "contracts/layertwo/optimism/wrapper/IL2NameWrapperUpgrade.sol";
 
 uint32 constant CANNOT_UNWRAP = 1;
 uint32 constant CANNOT_BURN_FUSES = 2;
@@ -23,7 +23,7 @@ uint32 constant PARENT_CONTROLLED_FUSES = 0xFFFF0000;
 // all fuses apart from IS_DOT_ETH
 uint32 constant USER_SETTABLE_FUSES = 0xFFFDFFFF;
 
-interface INameWrapper is IERC1155 {
+interface IL2NameWrapper is IERC1155 {
     event NameWrapped(
         bytes32 indexed node,
         bytes name,
@@ -47,7 +47,7 @@ interface INameWrapper is IERC1155 {
 
     function name() external view returns (string memory);
 
-    function upgradeContract() external view returns (INameWrapperUpgrade);
+    function upgradeContract() external view returns (IL2NameWrapperUpgrade);
 
     function supportsInterface(bytes4 interfaceID) external view returns (bool);
 
@@ -153,7 +153,7 @@ interface INameWrapper is IERC1155 {
 
     function uri(uint256 tokenId) external view returns (string memory);
 
-    function setUpgradeContract(INameWrapperUpgrade _upgradeAddress) external;
+    function setUpgradeContract(IL2NameWrapperUpgrade _upgradeAddress) external;
 
     function allFusesBurned(
         bytes32 node,

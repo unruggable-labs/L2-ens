@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ~0.8.17;
 
-interface INameWrapperUpgrade {
+interface IL2NameWrapperUpgrade {
     function wrapFromUpgrade(
         bytes calldata name,
         address wrappedOwner,

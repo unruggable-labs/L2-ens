@@ -6,3 +6,4 @@ ens-contracts/=lib/ens-contracts/contracts/
 @openzeppelin/=lib/openzeppelin-contracts/
 @ensdomains/buffer/=lib/buffer/
 unruggable-protocol/=lib/unruggable-protocol/
+optimism/=contracts/layertwo/optimism/

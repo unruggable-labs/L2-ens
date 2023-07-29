@@ -1,20 +1,20 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ~0.8.17;
 
-import {ERC1155Fuse, IERC1155MetadataURI} from "./ERC1155Fuse.sol";
-import {Controllable} from "./Controllable.sol";
-import {INameWrapper, CANNOT_UNWRAP, CANNOT_BURN_FUSES, CANNOT_TRANSFER, CANNOT_SET_RESOLVER, CANNOT_SET_TTL, CANNOT_CREATE_SUBDOMAIN, CANNOT_APPROVE, PARENT_CANNOT_CONTROL, CAN_DO_EVERYTHING, IS_DOT_ETH, CAN_EXTEND_EXPIRY, PARENT_CONTROLLED_FUSES, USER_SETTABLE_FUSES} from "./INameWrapper.sol";
-import {INameWrapperUpgrade} from "./INameWrapperUpgrade.sol";
-import {IMetadataService} from "./IMetadataService.sol";
-import {ENS} from "../registry/ENS.sol";
-import {IReverseRegistrar} from "../reverseRegistrar/IReverseRegistrar.sol";
-import {ReverseClaimer} from "../reverseRegistrar/ReverseClaimer.sol";
-import {IBaseRegistrar} from "../ethregistrar/IBaseRegistrar.sol";
+import {ERC1155Fuse, IERC1155MetadataURI} from "ens-contracts/wrapper/ERC1155Fuse.sol";
+import {Controllable} from "ens-contracts/wrapper/Controllable.sol";
+import {IL2NameWrapper, CANNOT_UNWRAP, CANNOT_BURN_FUSES, CANNOT_TRANSFER, CANNOT_SET_RESOLVER, CANNOT_SET_TTL, CANNOT_CREATE_SUBDOMAIN, CANNOT_APPROVE, PARENT_CANNOT_CONTROL, CAN_DO_EVERYTHING, IS_DOT_ETH, CAN_EXTEND_EXPIRY, PARENT_CONTROLLED_FUSES, USER_SETTABLE_FUSES} from "optimism/wrapper/IL2NameWrapper.sol";
+import {IL2NameWrapperUpgrade} from "optimism/wrapper/IL2NameWrapperUpgrade.sol";
+import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
+import {ENS} from "ens-contracts/registry/ENS.sol";
+import {IReverseRegistrar} from "ens-contracts/reverseRegistrar/IReverseRegistrar.sol";
+import {ReverseClaimer} from "ens-contracts/reverseRegistrar/ReverseClaimer.sol";
+import {IBaseRegistrar} from "ens-contracts/ethregistrar/IBaseRegistrar.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {BytesUtils} from "./BytesUtils.sol";
-import {ERC20Recoverable} from "../utils/ERC20Recoverable.sol";
+import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
+import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 
 error Unauthorised(bytes32 node, address addr);
 error IncompatibleParent();
@@ -28,10 +28,10 @@ error OperationProhibited(bytes32 node);
 error NameIsNotWrapped();
 error NameIsStillExpired();
 
-contract NameWrapper is
+contract L2NameWrapper is
     Ownable,
     ERC1155Fuse,
-    INameWrapper,
+    IL2NameWrapper,
     Controllable,
     IERC721Receiver,
     ERC20Recoverable,
@@ -53,7 +53,7 @@ contract NameWrapper is
     bytes32 private constant ROOT_NODE =
         0x0000000000000000000000000000000000000000000000000000000000000000;
 
-    INameWrapperUpgrade public upgradeContract;
+    IL2NameWrapperUpgrade public upgradeContract;
     uint64 private constant MAX_EXPIRY = type(uint64).max;
 
     constructor(
@@ -85,9 +85,9 @@ contract NameWrapper is
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(ERC1155Fuse, INameWrapper) returns (bool) {
+    ) public view virtual override(ERC1155Fuse, IL2NameWrapper) returns (bool) {
         return
-            interfaceId == type(INameWrapper).interfaceId ||
+            interfaceId == type(IL2NameWrapper).interfaceId ||
             interfaceId == type(IERC721Receiver).interfaceId ||
             super.supportsInterface(interfaceId);
     }
@@ -102,7 +102,7 @@ contract NameWrapper is
 
     function ownerOf(
         uint256 id
-    ) public view override(ERC1155Fuse, INameWrapper) returns (address owner) {
+    ) public view override(ERC1155Fuse, IL2NameWrapper) returns (address owner) {
         return super.ownerOf(id);
     }
 
@@ -117,7 +117,7 @@ contract NameWrapper is
     )
         public
         view
-        override(ERC1155Fuse, INameWrapper)
+        override(ERC1155Fuse, IL2NameWrapper)
         returns (address operator)
     {
         address owner = ownerOf(id);
@@ -136,7 +136,7 @@ contract NameWrapper is
     function approve(
         address to,
         uint256 tokenId
-    ) public override(ERC1155Fuse, INameWrapper) {
+    ) public override(ERC1155Fuse, IL2NameWrapper) {
         (, uint32 fuses, ) = getData(tokenId);
         if (fuses & CANNOT_APPROVE == CANNOT_APPROVE) {
             revert OperationProhibited(bytes32(tokenId));
@@ -157,7 +157,7 @@ contract NameWrapper is
     )
         public
         view
-        override(ERC1155Fuse, INameWrapper)
+        override(ERC1155Fuse, IL2NameWrapper)
         returns (address owner, uint32 fuses, uint64 expiry)
     {
         (owner, fuses, expiry) = super.getData(id);
@@ -189,7 +189,7 @@ contract NameWrapper is
     )
         public
         view
-        override(INameWrapper, IERC1155MetadataURI)
+        override(IL2NameWrapper, IERC1155MetadataURI)
         returns (string memory)
     {
         return metadataService.uri(tokenId);
@@ -203,7 +203,7 @@ contract NameWrapper is
      */
 
     function setUpgradeContract(
-        INameWrapperUpgrade _upgradeAddress
+        IL2NameWrapperUpgrade _upgradeAddress
     ) public onlyOwner {
         upgradeContract = _upgradeAddress;
     }
