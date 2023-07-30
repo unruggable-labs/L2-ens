@@ -9,7 +9,6 @@ import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
 import {IReverseRegistrar} from "ens-contracts/reverseRegistrar/IReverseRegistrar.sol";
 import {ReverseClaimer} from "ens-contracts/reverseRegistrar/ReverseClaimer.sol";
-import {IBaseRegistrar} from "ens-contracts/ethregistrar/IBaseRegistrar.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -40,7 +39,6 @@ contract L2NameWrapper is
     using BytesUtils for bytes;
 
     ENS public immutable ens;
-    IBaseRegistrar public immutable registrar;
     IMetadataService public metadataService;
     mapping(bytes32 => bytes) public names;
     string public constant name = "NameWrapper";
@@ -58,11 +56,9 @@ contract L2NameWrapper is
 
     constructor(
         ENS _ens,
-        IBaseRegistrar _registrar,
         IMetadataService _metadataService
     ) ReverseClaimer(_ens, msg.sender) {
         ens = _ens;
-        registrar = _registrar;
         metadataService = _metadataService;
 
         /* Burn PARENT_CANNOT_CONTROL and CANNOT_UNWRAP fuses for ROOT_NODE and ETH_NODE and set expiry to max */
@@ -328,44 +324,6 @@ contract L2NameWrapper is
             uint64(registrarExpiry) + GRACE_PERIOD,
             resolver
         );
-    }
-
-    /**
-     * @notice Renews a .eth second-level domain.
-     * @dev Only callable by authorised controllers.
-     * @param tokenId The hash of the label to register (eg, `keccak256('foo')`, for 'foo.eth').
-     * @param duration The number of seconds to renew the name for.
-     * @return expires The expiry date of the name on the .eth registrar, in seconds since the Unix epoch.
-     */
-
-    function renew(
-        uint256 tokenId,
-        uint256 duration
-    ) external onlyController returns (uint256 expires) {
-        bytes32 node = _makeNode(ETH_NODE, bytes32(tokenId));
-
-        uint256 registrarExpiry = registrar.renew(tokenId, duration);
-
-        // Do not set anything in wrapper if name is not wrapped
-        try registrar.ownerOf(tokenId) returns (address registrarOwner) {
-            if (
-                registrarOwner != address(this) ||
-                ens.owner(node) != address(this)
-            ) {
-                return registrarExpiry;
-            }
-        } catch {
-            return registrarExpiry;
-        }
-
-        // Set expiry in Wrapper
-        uint64 expiry = uint64(registrarExpiry) + GRACE_PERIOD;
-
-        // Use super to allow names expired on the wrapper, but not expired on the registrar to renew()
-        (address owner, uint32 fuses, ) = super.getData(uint256(node));
-        _setData(node, owner, fuses, expiry);
-
-        return registrarExpiry;
     }
 
     /**
@@ -874,41 +832,6 @@ contract L2NameWrapper is
         } catch {
             return false;
         }
-    }
-
-    function onERC721Received(
-        address to,
-        address,
-        uint256 tokenId,
-        bytes calldata data
-    ) public returns (bytes4) {
-        //check if it's the eth registrar ERC721
-        if (msg.sender != address(registrar)) {
-            revert IncorrectTokenType();
-        }
-
-        (
-            string memory label,
-            address owner,
-            uint16 ownerControlledFuses,
-            address resolver
-        ) = abi.decode(data, (string, address, uint16, address));
-
-        bytes32 labelhash = bytes32(tokenId);
-        bytes32 labelhashFromData = keccak256(bytes(label));
-
-        if (labelhashFromData != labelhash) {
-            revert LabelMismatch(labelhashFromData, labelhash);
-        }
-
-        // transfer the ens record back to the new owner (this contract)
-        registrar.reclaim(uint256(labelhash), address(this));
-
-        uint64 expiry = uint64(registrar.nameExpires(tokenId)) + GRACE_PERIOD;
-
-        _wrapETH2LD(label, owner, ownerControlledFuses, expiry, resolver);
-
-        return IERC721Receiver(to).onERC721Received.selector;
     }
 
     /***** Internal functions */
