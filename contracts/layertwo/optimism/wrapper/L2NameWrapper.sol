@@ -495,20 +495,19 @@ contract L2NameWrapper is
             revert NameIsNotWrapped();
         }
 
-        // this flag is used later, when checking fuses
-        bool canExtendSubname = canExtendSubnames(parentNode, msg.sender);
-        // only allow the owner of the name or owner of the parent name
-        if (!canExtendSubname && !canModifyName(node, msg.sender)) {
-            revert Unauthorised(node, msg.sender);
-        }
-
         (address owner, uint32 fuses, uint64 oldExpiry) = getData(
             uint256(node)
         );
 
-        // Either CAN_EXTEND_EXPIRY must be set, or the caller must have permission to modify the parent name
-        if (!canExtendSubname && fuses & CAN_EXTEND_EXPIRY == 0) {
-            revert OperationProhibited(node);
+        // get the approved contract address
+        address approved = getApproved(uint256(node));
+
+        // Only allow the owner of the name, owner of the parent name with CAN_EXTEND_EXPIRY,
+        // or the approved contract on the node to extend the expiry of the name. 
+        if (!canExtendSubnames(parentNode, msg.sender) && 
+            !(canModifyName(node, msg.sender) && fuses & CAN_EXTEND_EXPIRY != 0) &&
+            !(msg.sender == approved)) {
+            revert Unauthorised(node, msg.sender);
         }
 
         // Max expiry is set to the expiry of the parent
@@ -634,6 +633,7 @@ contract L2NameWrapper is
         bytes32 parentNode,
         string calldata label,
         address owner,
+        address approved,
         uint32 fuses,
         uint64 expiry
     ) public onlyTokenOwner(parentNode) returns (bytes32 node) {
@@ -646,6 +646,12 @@ contract L2NameWrapper is
 
         if (!_isWrapped(node)) {
             ens.setSubnodeOwner(parentNode, labelhash, address(this));
+
+            // Add an approved address
+            if (approved != address(0)) {
+                super._approve(approved, uint256(node));
+            }
+
             _wrap(node, name, owner, fuses, expiry);
         } else {
             _updateName(parentNode, node, label, owner, fuses, expiry);
