@@ -32,7 +32,6 @@ contract L2NameWrapper is
     ERC1155Fuse,
     IL2NameWrapper,
     Controllable,
-    IERC721Receiver,
     ERC20Recoverable,
     ReverseClaimer
 {
@@ -253,14 +252,6 @@ contract L2NameWrapper is
             !_isETH2LDInGracePeriod(fuses, expiry);
     }
 
-
-
-
-
-
-
-
-
     /**
      * @notice Sets fuses of a name
      * @param node Namehash of the name
@@ -354,15 +345,6 @@ contract L2NameWrapper is
         (bytes32 labelhash, ) = name.readLabel(0);
 
         address approved = getApproved(uint256(node));
-
-        // If the name is a second level .eth then change the registrant to the upgrade contract.
-        if (fuses & IS_DOT_ETH == IS_DOT_ETH) {
-            registrar.transferFrom(
-                address(this),
-                address(upgradeContract),
-                uint256(labelhash)
-            );
-        }
 
         // Change the owner in the registry to the upgrade contract.
         ens.setOwner(node, address(upgradeContract));
@@ -646,44 +628,10 @@ contract L2NameWrapper is
         return fuses & fuseMask == fuseMask;
     }
 
-    /**
-     * @notice Checks if a name is wrapped
-     * @param node Namehash of the name
-     * @return Boolean of whether or not the name is wrapped
-     */
 
-    function isWrapped(bytes32 node) public view returns (bool) {
-        bytes memory name = names[node];
-        if (name.length == 0) {
-            return false;
-        }
-        (bytes32 labelhash, uint256 offset) = name.readLabel(0);
-        bytes32 parentNode = name.namehash(offset);
-        return isWrapped(parentNode, labelhash);
-    }
+// just deleting this temporarily
 
-    /**
-     * @notice Checks if a name is wrapped in a more gas efficient way
-     * @param parentNode Namehash of the name
-     * @param labelhash Namehash of the name
-     * @return Boolean of whether or not the name is wrapped
-     */
 
-    function isWrapped(
-        bytes32 parentNode,
-        bytes32 labelhash
-    ) public view returns (bool) {
-        bytes32 node = _makeNode(parentNode, labelhash);
-        bool wrapped = _isWrapped(node);
-        if (parentNode != ETH_NODE) {
-            return wrapped;
-        }
-        try registrar.ownerOf(uint256(labelhash)) returns (address owner) {
-            return owner == address(this);
-        } catch {
-            return false;
-        }
-    }
 
     /***** Internal functions */
 
