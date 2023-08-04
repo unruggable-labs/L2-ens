@@ -9,7 +9,6 @@ import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
 import {IReverseRegistrar} from "ens-contracts/reverseRegistrar/IReverseRegistrar.sol";
 import {ReverseClaimer} from "ens-contracts/reverseRegistrar/ReverseClaimer.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
@@ -40,7 +39,6 @@ contract L2NameWrapper is
     ENS public immutable ens;
     IMetadataService public metadataService;
     mapping(bytes32 => bytes) public names;
-    string public constant name = "NameWrapper";
 
     uint64 private constant GRACE_PERIOD = 90 days;
     bytes32 private constant ETH_NODE =
@@ -64,7 +62,7 @@ contract L2NameWrapper is
 
         _setData(
             uint256(ETH_NODE),
-            address(0),
+            owner(), // For L2 we change the owner of ETH_NODE to the owner of the wrapper.
             uint32(PARENT_CANNOT_CONTROL | CANNOT_UNWRAP),
             MAX_EXPIRY
         );
@@ -83,7 +81,6 @@ contract L2NameWrapper is
     ) public view virtual override(ERC1155Fuse, IL2NameWrapper) returns (bool) {
         return
             interfaceId == type(IL2NameWrapper).interfaceId ||
-            interfaceId == type(IERC721Receiver).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
