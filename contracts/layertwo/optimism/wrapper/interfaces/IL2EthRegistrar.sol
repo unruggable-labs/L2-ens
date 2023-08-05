@@ -10,8 +10,8 @@ import {IRenewalController} from "contracts/subwrapper/interfaces/IRenewalContro
 
 interface IL2EthRegistrar {
 
-    event SubnameRegistered(
-        string label,
+    event Eth2LDRegistered(
+        string indexed label,
         bytes32 indexed node,
         address indexed owner,
         uint256 price,
@@ -19,12 +19,13 @@ interface IL2EthRegistrar {
     );
 
     event NameRenewed(
-        bytes indexed name,
-        uint256 cost,
-        uint256 expires
+        string indexed label,
+        uint256 indexed cost,
+        uint256 indexed expires
     );
 
     function rentPrice(
+        bytes calldata name,
         uint256 duration
     )
         external
@@ -55,7 +56,7 @@ interface IL2EthRegistrar {
         uint256 charAmount
     ) external;
 
-    function getLastCharIndex(bytes32 parentNode) external view returns (uint256);
+    function getLastCharIndex() external view returns (uint256);
 
     function available(bytes memory name) external returns (bool);
 
@@ -74,6 +75,6 @@ interface IL2EthRegistrar {
         uint256 duration,
         bytes32 secret,
         address resolver,
-        uint32 fuses
+        uint16 fuses
     ) external payable;
 }
