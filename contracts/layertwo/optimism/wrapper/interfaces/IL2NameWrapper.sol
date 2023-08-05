@@ -43,13 +43,25 @@ interface IL2NameWrapper is IERC1155 {
 
     function names(bytes32) external view returns (bytes memory);
 
-    function name() external view returns (string memory);
-
     function upgradeContract() external view returns (INameWrapperUpgrade);
 
     function supportsInterface(bytes4 interfaceID) external view returns (bool);
 
     function upgrade(bytes calldata name, bytes calldata extraData) external;
+
+    function registerAndWrapEth2LD(
+        string calldata label,
+        address wrappedOwner,
+        address approved,
+        uint256 duration,
+        address resolver,
+        uint16 ownerControlledFuses
+    ) external returns (uint256 registrarExpiry);
+
+    function renewEth2LD(
+        bytes32 labelhash,
+        uint64 duration
+    ) external returns (uint64 expiry);
 
     function setFuses(
         bytes32 node,
@@ -67,6 +79,7 @@ interface IL2NameWrapper is IERC1155 {
         bytes32 node,
         string calldata label,
         address owner,
+        address approved,
         address resolver,
         uint64 ttl,
         uint32 fuses,
