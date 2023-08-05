@@ -2,17 +2,16 @@
 pragma solidity ^0.8.17;
 
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
-import {ISubnameRegistrar} from "contracts/subwrapper/interfaces/ISubnameRegistrar.sol";
-import {ISubnameWrapper} from "contracts/subwrapper/interfaces/ISubnameWrapper.sol";
+import {IL2EthRegistrar} from "optimism/wrapper/interfaces/IL2EthRegistrar.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
-import {IL2NameWrapper, CANNOT_UNWRAP, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/IL2NameWrapper.sol";
+import {IL2NameWrapper, CANNOT_UNWRAP, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
-import {BytesUtilsSub} from "./BytesUtilsSub.sol";
+import {BytesUtilsSub} from "contracts/subwrapper/BytesUtilsSub.sol";
 import {IAggregatorInterface} from "contracts/subwrapper/interfaces/IAggregatorInterface.sol";
-import {Balances} from "./Balances.sol";
+import {Balances} from "contracts/subwrapper/Balances.sol";
 import {IRenewalController} from "contracts/subwrapper/interfaces/IRenewalController.sol";
 
 error CommitmentTooNew(bytes32 commitment);
@@ -29,13 +28,15 @@ error WrongNumberOfChars(string label);
 error NoPricingData();
 error CannotSetNewCharLengthAmounts();
 error InvalidDuration(uint256 duration);
+error LabelTooShort();
+error LabelTooLong();
 
 /**
  * @dev A registrar controller for registering and renewing names at fixed cost.
  */
 contract L2EthRegistrar is
     Ownable,
-    ISubnameRegistrar,
+    IL2EthRegistrar,
     ERC165,
     ERC20Recoverable,
     Balances
@@ -45,14 +46,14 @@ contract L2EthRegistrar is
     using Address for address payable;
     using BytesUtilsSub for bytes;
 
+    uint64 private constant GRACE_PERIOD = 90 days;
     uint256 public constant MIN_REGISTRATION_DURATION = 28 days;
     bytes32 private constant ETH_NODE =
         0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
     uint64 private constant MAX_EXPIRY = type(uint64).max;
     uint256 public immutable minCommitmentAge;
     uint256 public immutable maxCommitmentAge;
-    INameWrapper public immutable nameWrapper;
-    ISubnameWrapper public immutable subnameWrapper;
+    IL2NameWrapper public immutable nameWrapper;
     ENS public immutable ens;
 
     // Chainlink oracle address
@@ -96,19 +97,17 @@ contract L2EthRegistrar is
 
     /**
      * @notice Gets the total cost of rent in wei, from the unitPrice, i.e. USD, and duration.
-     * @param name The name in DNS format, e.g. vault.vitalik.eth
      * @param duration The amount of time the name will be rented for/extended in years. 
      * @return The rent price for the duration in Wei and USD. 
      */
 
-    function rentPrice(bytes calldata name, uint256 duration)
+    function rentPrice(bytes memory name, uint256 duration)
         public
         view
         returns (uint256, uint256) // (uint256 weiPrice, uint256 usdPrice) 
     {
 
         ( , uint256 labelLength) = name.getFirstLabel();
-        bytes32 parentNode = name.namehash(labelLength+1);
 
         // Get the length of the charAmounts array.
         uint256 charAmountsLength = charAmounts.length;
@@ -186,10 +185,10 @@ contract L2EthRegistrar is
     ) public onlyOwner {
 
         // Set the pricing for subnames of the parent node.
-        pricingData[parentNode].minRegistrationDuration = _minRegistrationDuration;
-        pricingData[parentNode].maxRegistrationDuration = _maxRegistrationDuration;
-        pricingData[parentNode].minChars = _minChars;
-        pricingData[parentNode].maxChars = _maxChars;
+        minRegistrationDuration = _minRegistrationDuration;
+        maxRegistrationDuration = _maxRegistrationDuration;
+        minChars = _minChars;
+        maxChars = _maxChars;
     }
 
     /**
@@ -274,7 +273,7 @@ contract L2EthRegistrar is
         // If the parent owner revokes the authorization of this contract, then this function will still return true, but
         // registration will not be possible. 
 
-        return validLength(node, label) && 
+        return validLength(label) && 
             ens.owner(node) == address(0);
 
     }
@@ -325,12 +324,13 @@ contract L2EthRegistrar is
         uint256 duration,
         bytes32 secret,
         address resolver,
-        uint32 fuses
+        uint16 fuses
     ) public payable {
 
-        // the labelhash of the label.
-        labelhash = keccak256(bytes(label));
-        node = _makeNode(ETH_NODE, labelhash);
+        bytes32 node = _makeNode(ETH_NODE, keccak256(bytes(label)));
+
+        // Create the name of the .eth 2LD, using addlabel
+        bytes memory name = _addLabel(label, "\x03eth\x00");
 
         // Check to make sure the duration is between the min and max. 
         if (duration < minRegistrationDuration ||
@@ -338,14 +338,15 @@ contract L2EthRegistrar is
             revert InvalidDuration(duration); 
         }
 
-        address parentOwner = nameWrapper.ownerOf(uint256(parentNode));
+        address parentOwner = nameWrapper.ownerOf(uint256(ETH_NODE));
 
         // Check to make sure the label is a valid length.
         if(!validLength(label)){
             revert WrongNumberOfChars(label);
         }
 
-        uint64 expires =  uint64(block.timestamp + duration);
+        // add the grace period to the duration.
+        uint64 expires =  uint64(block.timestamp + duration + GRACE_PERIOD);
 
         // Get the price for the duration.
         (uint256 price,) = rentPrice(name, duration);
@@ -383,17 +384,16 @@ contract L2EthRegistrar is
             )
         );
 
-        nameWrapper.setSubnodeRecord(
-            ETH_NODE,
-            string(label),
+        nameWrapper.registerAndWrapEth2LD(
+            label, 
             owner,
+            address(0), // no approved account
+            expires,
             resolver,
-            0, // TTL
-            fuses | IS_DOT_ETH | CANNOT_UNWRAP | PARENT_CANNOT_CONTROL | CAN_EXTEND_EXPIRY,
-            expires
+            fuses
         );
 
-        emit SubnameRegistered(
+        emit Eth2LDRegistered(
             label,
             node,
             owner,
@@ -412,19 +412,12 @@ contract L2EthRegistrar is
 
     /**
     * @notice Function to renew a name for a specified duration. 
-    * @dev This function is allows for the upgradeing of the NameWrapper and SubnameWrapper contracts.
-    * It is not possible to know what the interface of the upgarded contracts will be, so we assume that
-    * they will be compatible with the current version of the contracts.
-    * @param nameWrapperV The version of the NameWrapper.
-    * @param subnameWrapperV The version of the SubnameWrapper. 
-    * @param name The name to be renewed in DNS format.
+    * @param label The name to be renewed in DNS format.
     * @param duration The duration for which the name should be renewed in years.
     */
 
-    function renewWithVersions(
-        uint256 nameWrapperV,
-        uint256 subnameWrapperV, 
-        bytes calldata name, 
+    function renew(
+        string calldata label, 
         address referrer, 
         uint256 duration
         )
@@ -432,24 +425,21 @@ contract L2EthRegistrar is
         payable
     {        
         
-        bytes32 parentNode;
-        bytes32 node;
-        bytes32 labelhash;
+        // the labelhash of the label.
+        bytes32 labelhash = keccak256(bytes(label));
+        // Create the parent node.
+        bytes32 parentNode = bytes("\x03eth\x00").namehash(0);
+        bytes32 node = _makeNode(ETH_NODE, labelhash);
 
-        // Create a block to solve a stack too deep error.
-        { 
-            uint256 offset;
-            (labelhash, offset) = name.readLabel(0);
-            parentNode = name.namehash(offset);
-            node = _makeNode(parentNode, labelhash);
-        }
+        // Create the name of the .eth 2LD, using addlabel
+        bytes memory name = _addLabel(label, "\x03eth\x00");
 
         // Get the owners of the name and the parent name.
-        address parentOwner = INameWrapper(nameWrappers[nameWrapperV]).ownerOf(uint256(parentNode));
-        address nodeOwner = ISubnameWrapper(subnameWrappers[subnameWrapperV]).ownerOf(uint256(node));
+        address parentOwner = nameWrapper.ownerOf(uint256(ETH_NODE));
+        address nodeOwner = nameWrapper.ownerOf(uint256(node));
 
-        // Check to make sure the caller (msg.sender) is authorised to renew the name.
-        if( msg.sender != nodeOwner && !ISubnameWrapper(subnameWrappers[subnameWrapperV]).isApprovedForAll(nodeOwner, msg.sender)){
+        // remove the access control check, because anyone can renew a .eth 2LD name. 
+        if( msg.sender != nodeOwner && nameWrapper.isApprovedForAll(nodeOwner, msg.sender)){
             revert UnauthorizedAddress(node);
         }
 
@@ -458,11 +448,11 @@ contract L2EthRegistrar is
         // Create a block to solve a stack too deep error.
         {
             // Get the previous expiry. 
-            (,, uint64 nodeExpiry) = INameWrapper(nameWrappers[nameWrapperV]).getData(uint256(node));
+            (,, uint64 nodeExpiry) = nameWrapper.getData(uint256(node));
 
             // Check to see if the duration is too long and
             // if it is set the duration.
-            (,, uint64 parentExpiry) = INameWrapper(nameWrappers[nameWrapperV]).getData(uint256(parentNode));
+            (,, uint64 parentExpiry) = nameWrapper.getData(uint256(parentNode));
             if (nodeExpiry + duration > parentExpiry) {
                 duration = parentExpiry - nodeExpiry;
             }
@@ -491,27 +481,17 @@ contract L2EthRegistrar is
                 balances[referrer] += referrerAmount;
             }
 
-            // Calculate the amount to be given to the owner of the contract. 
-            // We don't need a balance for the owner of the contract because the owner
-            // can withdraw any funds in the contract minus total balances. 
-            uint256 ownerAmount = priceEth * ownerCut / 10000;
-
-
-            // Increase the owner of the parent name's balance minus the
-            // referrer amount and the owner amount.
-            balances[parentOwner] += priceEth - referrerAmount - ownerAmount;
-
             // Increase the total balances
-            totalBalance += priceEth - ownerAmount;
+            totalBalance += referrerAmount;
         }
 
-        ISubnameWrapper(subnameWrappers[subnameWrapperV]).extendExpiry(
-            parentNode,
+        nameWrapper.extendExpiry(
+            ETH_NODE,
             labelhash,
             expiry
         );
 
-        emit NameRenewed(name, priceEth, expiry);
+        emit NameRenewed(label, priceEth, expiry);
 
         // If the caller paid too much refund the amount overpaid. 
         if (msg.value > priceEth) {
@@ -541,11 +521,24 @@ contract L2EthRegistrar is
         returns (bool)
     {
         return
-            interfaceId == type(ISubnameRegistrar).interfaceId ||
+            interfaceId == type(IL2EthRegistrar).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
     /* Internal functions */
+
+    function _addLabel(
+        string memory label,
+        bytes memory name
+    ) internal pure returns (bytes memory ret) {
+        if (bytes(label).length < 1) {
+            revert LabelTooShort();
+        }
+        if (bytes(label).length > 255) {
+            revert LabelTooLong();
+        }
+        return abi.encodePacked(uint8(bytes(label).length), label, name);
+    }
 
     function _burnCommitment(
         uint256 duration,
