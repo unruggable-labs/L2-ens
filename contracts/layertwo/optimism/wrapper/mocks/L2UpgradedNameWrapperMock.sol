@@ -2,7 +2,6 @@
 pragma solidity ^0.8.4;
 import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
-import {IBaseRegistrar} from "ens-contracts/ethregistrar/IBaseRegistrar.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
 
 contract L2UpgradedNameWrapperMock is INameWrapperUpgrade {
@@ -12,11 +11,9 @@ contract L2UpgradedNameWrapperMock is INameWrapperUpgrade {
         0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
 
     ENS public immutable ens;
-    IBaseRegistrar public immutable registrar;
 
-    constructor(ENS _ens, IBaseRegistrar _registrar) {
+    constructor(ENS _ens ) {
         ens = _ens;
-        registrar = _registrar;
     }
 
     event NameUpgraded(
@@ -39,12 +36,6 @@ contract L2UpgradedNameWrapperMock is INameWrapperUpgrade {
         (bytes32 labelhash, uint256 offset) = name.readLabel(0);
         bytes32 parentNode = name.namehash(offset);
         bytes32 node = _makeNode(parentNode, labelhash);
-
-        // Check to make sure we are the owner of the name.
-        if (parentNode == ETH_NODE) {
-            address registrant = registrar.ownerOf(uint256(labelhash));
-            require(registrant == address(this));
-        }
 
         address owner = ens.owner(node);
         require(owner == address(this));
