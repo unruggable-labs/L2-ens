@@ -62,7 +62,7 @@ contract L2NameWrapper is
 
         _setData(
             uint256(ETH_NODE),
-            owner(), // For L2 we change the owner of ETH_NODE to the owner of the wrapper.
+            address(0),
             uint32(PARENT_CANNOT_CONTROL | CANNOT_UNWRAP),
             MAX_EXPIRY
         );
@@ -250,6 +250,71 @@ contract L2NameWrapper is
     }
 
     /**
+     * @dev Registers a new .eth second-level domain and wraps it.
+     *      Only callable by authorised controllers.
+     * @param label The label to register (Eg, 'foo' for 'foo.eth').
+     * @param wrappedOwner The owner of the wrapped name.
+     * @param approved The address to approve for the name.
+     * @param duration The duration, in seconds, to register the name for.
+     * @param resolver The resolver address to set on the ENS registry (optional).
+     * @param ownerControlledFuses Initial owner-controlled fuses to set
+     * @return registrarExpiry The expiry date of the new name on the .eth registrar, in seconds since the Unix epoch.
+     */
+
+    function registerAndWrapEth2LD(
+        string calldata label,
+        address wrappedOwner,
+        address approved,
+        uint256 duration,
+        address resolver,
+        uint16 ownerControlledFuses
+    ) external onlyController returns (uint256 registrarExpiry) {
+
+        // Create a labelhash from the label.
+        bytes32 labelhash = keccak256(bytes(label));
+        // Save the subname in the registry.
+
+        ens.setSubnodeRecord(ETH_NODE, labelhash, address(this), address(0), 0);
+
+        _wrapETH2LD(
+            label,
+            wrappedOwner,
+            approved,
+            ownerControlledFuses,
+            uint64(registrarExpiry) + GRACE_PERIOD,
+            resolver
+        );
+    }
+
+    /**
+     * @notice Renews a .eth second-level domain.
+     * @dev Only callable by authorised controllers.
+     * @param labelhash The hash of the label to register (eg, `keccak256('foo')`, for 'foo.eth').
+     * @param duration The number of seconds to renew the name for.
+     * @return expiry The expiry date of the name, in seconds since the Unix epoch.
+     */
+
+    function renewEth2LD(
+        bytes32 labelhash,
+        uint64 duration
+    ) external onlyController returns (uint64 expiry) {
+        bytes32 node = _makeNode(ETH_NODE, labelhash);
+
+        if (!_isWrapped(node)) {
+            revert NameIsNotWrapped();
+        }
+
+        // get the owner fuses and expiry of the node
+        (address owner, uint32 fuses, uint64 oldExpiry) = getData(uint256(node));
+
+        // Set expiry in Wrapper
+        uint64 expiry = oldExpiry + duration;
+
+        _setData(node, owner, fuses, expiry);
+
+        return expiry;
+    }
+    /**
      * @notice Sets fuses of a name
      * @param node Namehash of the name
      * @param ownerControlledFuses Owner-controlled fuses to burn
@@ -299,7 +364,7 @@ contract L2NameWrapper is
         // get the approved contract address
         address approved = getApproved(uint256(node));
 
-        // Only allow the owner of the name, owner of the parent name with CAN_EXTEND_EXPIRY,
+        // Only allow the owner of the parent name, owner of the name with CAN_EXTEND_EXPIRY,
         // or the approved contract on the node to extend the expiry of the name. 
         if (!canExtendSubnames(parentNode, msg.sender) && 
             !(canModifyName(node, msg.sender) && fuses & CAN_EXTEND_EXPIRY != 0) &&
@@ -412,6 +477,7 @@ contract L2NameWrapper is
      * @param parentNode Parent namehash of the subdomain
      * @param label Label of the subdomain as a string
      * @param owner New owner in the wrapper
+     * @param approved Address to approve for the name
      * @param fuses Initial fuses for the wrapped subdomain
      * @param expiry When the name will expire in seconds since the Unix epoch
      * @return node Namehash of the subdomain
@@ -433,17 +499,17 @@ contract L2NameWrapper is
         expiry = _checkParentFusesAndExpiry(parentNode, node, fuses, expiry);
 
         if (!_isWrapped(node)) {
-            ens.setSubnodeOwner(parentNode, labelhash, address(this));
-
-            // Add an approved address
-            if (approved != address(0)) {
-                super._approve(approved, uint256(node));
-            }
-
-            _wrap(node, name, owner, fuses, expiry);
-        } else {
-            _updateName(parentNode, node, label, owner, fuses, expiry);
+            revert NameIsNotWrapped();
         }
+
+        ens.setSubnodeOwner(parentNode, labelhash, address(this));
+
+        // Add an approved address
+        if (approved != address(0)) {
+            super._approve(approved, uint256(node));
+        }
+
+        _wrap(node, name, owner, fuses, expiry);
     }
 
     /**
@@ -451,6 +517,7 @@ contract L2NameWrapper is
      * @param parentNode parent namehash of the subdomain
      * @param label label of the subdomain as a string
      * @param owner new owner in the wrapper
+     * @param approved address to approve for the name
      * @param resolver resolver contract in the registry
      * @param ttl ttl in the registry
      * @param fuses initial fuses for the wrapped subdomain
@@ -462,6 +529,7 @@ contract L2NameWrapper is
         bytes32 parentNode,
         string memory label,
         address owner,
+        address approved,
         address resolver,
         uint64 ttl,
         uint32 fuses,
@@ -473,25 +541,25 @@ contract L2NameWrapper is
         _checkFusesAreSettable(node, fuses);
         bytes memory name = _saveLabel(parentNode, node, label);
         expiry = _checkParentFusesAndExpiry(parentNode, node, fuses, expiry);
+
         if (!_isWrapped(node)) {
-            ens.setSubnodeRecord(
-                parentNode,
-                labelhash,
-                address(this),
-                resolver,
-                ttl
-            );
-            _wrap(node, name, owner, fuses, expiry);
-        } else {
-            ens.setSubnodeRecord(
-                parentNode,
-                labelhash,
-                address(this),
-                resolver,
-                ttl
-            );
-            _updateName(parentNode, node, label, owner, fuses, expiry);
+            revert NameIsNotWrapped();
         }
+
+        ens.setSubnodeRecord(
+            parentNode,
+            labelhash,
+            address(this),
+            resolver,
+            ttl
+        );
+
+        // Add an approved address
+        if (approved != address(0)) {
+            super._approve(approved, uint256(node));
+        }
+
+        _wrap(node, name, owner, fuses, expiry);
     }
 
     /**
@@ -804,6 +872,7 @@ contract L2NameWrapper is
     function _wrapETH2LD(
         string memory label,
         address wrappedOwner,
+        address approved, 
         uint32 fuses,
         uint64 expiry,
         address resolver
@@ -821,6 +890,11 @@ contract L2NameWrapper is
             fuses | PARENT_CANNOT_CONTROL | IS_DOT_ETH,
             expiry
         );
+
+        // Add an approved address
+        if (approved != address(0)) {
+            super._approve(approved, uint256(node));
+        }
 
         if (resolver != address(0)) {
             ens.setResolver(node, resolver);
