@@ -410,7 +410,116 @@ contract L2EthRegistrar is
         }
     }
 
+    /**
+    * @notice Function to renew a name for a specified duration. 
+    * @dev This function is allows for the upgradeing of the NameWrapper and SubnameWrapper contracts.
+    * It is not possible to know what the interface of the upgarded contracts will be, so we assume that
+    * they will be compatible with the current version of the contracts.
+    * @param nameWrapperV The version of the NameWrapper.
+    * @param subnameWrapperV The version of the SubnameWrapper. 
+    * @param name The name to be renewed in DNS format.
+    * @param duration The duration for which the name should be renewed in years.
+    */
 
+    function renewWithVersions(
+        uint256 nameWrapperV,
+        uint256 subnameWrapperV, 
+        bytes calldata name, 
+        address referrer, 
+        uint256 duration
+        )
+        public
+        payable
+    {        
+        
+        bytes32 parentNode;
+        bytes32 node;
+        bytes32 labelhash;
+
+        // Create a block to solve a stack too deep error.
+        { 
+            uint256 offset;
+            (labelhash, offset) = name.readLabel(0);
+            parentNode = name.namehash(offset);
+            node = _makeNode(parentNode, labelhash);
+        }
+
+        // Get the owners of the name and the parent name.
+        address parentOwner = INameWrapper(nameWrappers[nameWrapperV]).ownerOf(uint256(parentNode));
+        address nodeOwner = ISubnameWrapper(subnameWrappers[subnameWrapperV]).ownerOf(uint256(node));
+
+        // Check to make sure the caller (msg.sender) is authorised to renew the name.
+        if( msg.sender != nodeOwner && !ISubnameWrapper(subnameWrappers[subnameWrapperV]).isApprovedForAll(nodeOwner, msg.sender)){
+            revert UnauthorizedAddress(node);
+        }
+
+        uint64 expiry;
+
+        // Create a block to solve a stack too deep error.
+        {
+            // Get the previous expiry. 
+            (,, uint64 nodeExpiry) = INameWrapper(nameWrappers[nameWrapperV]).getData(uint256(node));
+
+            // Check to see if the duration is too long and
+            // if it is set the duration.
+            (,, uint64 parentExpiry) = INameWrapper(nameWrappers[nameWrapperV]).getData(uint256(parentNode));
+            if (nodeExpiry + duration > parentExpiry) {
+                duration = parentExpiry - nodeExpiry;
+            }
+
+            // Set the expiry
+            expiry =  uint64(nodeExpiry + duration);
+        }
+
+        // Get the price for the duration.
+        (uint256 priceEth,) = rentPrice(name, duration);
+        if (msg.value < priceEth) {
+            revert InsufficientValue();
+        }
+
+        // Create a block to solve a stack too deep error.
+        {
+            uint256 referrerAmount;
+
+            // If a referrer is specified then calculate the amount to be given to the referrer.
+            if (referrer != address(0)) {
+
+                // Calculate the amount to be given to the referrer.
+                referrerAmount = priceEth * referrerCuts[referrer] / 10000;
+
+                // Increase the referrer's balance
+                balances[referrer] += referrerAmount;
+            }
+
+            // Calculate the amount to be given to the owner of the contract. 
+            // We don't need a balance for the owner of the contract because the owner
+            // can withdraw any funds in the contract minus total balances. 
+            uint256 ownerAmount = priceEth * ownerCut / 10000;
+
+
+            // Increase the owner of the parent name's balance minus the
+            // referrer amount and the owner amount.
+            balances[parentOwner] += priceEth - referrerAmount - ownerAmount;
+
+            // Increase the total balances
+            totalBalance += priceEth - ownerAmount;
+        }
+
+        ISubnameWrapper(subnameWrappers[subnameWrapperV]).extendExpiry(
+            parentNode,
+            labelhash,
+            expiry
+        );
+
+        emit NameRenewed(name, priceEth, expiry);
+
+        // If the caller paid too much refund the amount overpaid. 
+        if (msg.value > priceEth) {
+            payable(msg.sender).sendValue(msg.value - priceEth);
+        }
+
+    }
+    
     /**
     * @dev Converts USD to Wei. 
     * @param amount The amount of USD to be converted to Wei.
