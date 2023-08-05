@@ -8,7 +8,7 @@ import {ENS} from "ens-contracts/registry/ENS.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
-import {INameWrapper, CANNOT_UNWRAP, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "ens-contracts/wrapper/INameWrapper.sol";
+import {IL2NameWrapper, CANNOT_UNWRAP, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 import {BytesUtilsSub} from "./BytesUtilsSub.sol";
 import {IAggregatorInterface} from "contracts/subwrapper/interfaces/IAggregatorInterface.sol";
@@ -58,35 +58,22 @@ contract L2EthRegistrar is
     // Chainlink oracle address
     IAggregatorInterface public immutable usdOracle;
 
-    // A struct holding the pricing for renewals.
-    // This allows for different pricing for different lengths names. 
-    struct Pricing {
-        bool offerSubnames; 
-        IRenewalController renewalController;
-        uint64 minRegistrationDuration;
-        uint64 maxRegistrationDuration;
-        uint16 minChars;
-        uint16 maxChars;
-        uint256[] charAmounts;
-    }
+
+    // The pricing and character requirements for .eth 2LDs, e.g. vitalik.eth.
+    uint64 public minRegistrationDuration;
+    uint64 public maxRegistrationDuration;
+    uint16 public minChars;
+    uint16 public maxChars;
+    uint256[] public charAmounts;
+
     
     mapping(bytes32 => uint256) public commitments;
-
-    // The pricing data for each parent node.
-    mapping(bytes32=>Pricing) public pricingData;
-
-    // An allow list of parent nodes that can register subnames.
-    mapping(bytes32 => bool) public allowList;
-
-    // Permanently disable the allow list.
-    bool public allowListDisabled; 
 
     constructor(
         uint256 _minCommitmentAge,
         uint256 _maxCommitmentAge,
         ENS _ens,
-        INameWrapper _nameWrapper,
-        ISubnameWrapper _subnameWrapper,
+        IL2NameWrapper _nameWrapper,
         IAggregatorInterface _usdOracle
     ) {
         if (_maxCommitmentAge <= _minCommitmentAge) {
@@ -101,12 +88,6 @@ contract L2EthRegistrar is
         maxCommitmentAge = _maxCommitmentAge;
         ens = _ens;
         nameWrapper = _nameWrapper;
-
-        // The contract that wraps the subnames.
-        subnameWrapper = _subnameWrapper;
-
-        // Default cut is 2% (200/10000).
-        ownerCut = 200;  
 
         // Set the oracle address.
         usdOracle = _usdOracle;
@@ -130,7 +111,7 @@ contract L2EthRegistrar is
         bytes32 parentNode = name.namehash(labelLength+1);
 
         // Get the length of the charAmounts array.
-        uint256 charAmountsLength = pricingData[parentNode].charAmounts.length;
+        uint256 charAmountsLength = charAmounts.length;
 
         // The price of the length of the label in USD/sec. (with 18 digits of precision).
         uint256 unitPrice;
@@ -142,17 +123,17 @@ contract L2EthRegistrar is
 
                 // Get the unit price, i.e. the price in USD/sec, for the length of
                 // the label. If there is not a price set then use the defualt amount.  
-                unitPrice = pricingData[parentNode].charAmounts[labelLength];
+                unitPrice = charAmounts[labelLength];
 
                 // If the unit price is 0 then use the default amount.
                 if (unitPrice == 0){ 
-                    unitPrice = pricingData[parentNode].charAmounts[0];
+                    unitPrice = charAmounts[0];
                 } 
 
             } else {
 
                 // Get the unit price, i.e. the price in USD/sec using the defualt amount.  
-                unitPrice = pricingData[parentNode].charAmounts[0];
+                unitPrice = charAmounts[0];
 
             }
         } else {
@@ -165,45 +146,21 @@ contract L2EthRegistrar is
     }
 
     /**
-     * @notice Add a name to the allow list.
-     * @param _name The name in DNS format, e.g. vitalik.eth
-     * @param _allow A bool indicating if the name is allowed to be listed.
-    */
-
-    function allowName(bytes calldata _name, bool _allow) public onlyOwner {
-
-        // Get the namehash of the label.
-        bytes32 node = _name.namehash(0);
-
-        // Add the name to the allow list.
-        allowList[node] = _allow;
-    } 
-
-    /**
-     * @notice Disable the allow list permanenty.
-     */
-
-    function disableAllowList() public onlyOwner {
-        allowListDisabled = true;
-    }
-
-    /**
      * @notice checkes to see if the length of the name is greater than the min. and less than the max.
-     * @param node Namehash of the name
      * @param label Label as a string, e.g. "vault" or vault.vitalik.eth.
      */
 
-    function validLength(bytes32 node, string memory label) internal view returns (bool){
+    function validLength(string memory label) internal view returns (bool){
 
-        //NTS: Make sure to check what happens when string label is missing or zero length
+        //@audit : Make sure to check what happens when string label is missing or zero length
 
         // The name is valid if the number of characters of the label is greater than the 
         // minimum and the less than the maximum or the maximum is 0, return true.  
-        if (label.strlen() >= pricingData[node].minChars){
+        if (label.strlen() >= minChars){
 
             // If the maximum characters is set then check to make sure the label is 
             // shorter or equal to it.  
-            if (pricingData[node].maxChars != 0 && label.strlen() > pricingData[node].maxChars){
+            if (maxChars != 0 && label.strlen() > maxChars){
                 return false; 
             } else {
                 return true;
@@ -221,30 +178,13 @@ contract L2EthRegistrar is
      */
      
      function setParams(
-        bytes32 parentNode,
-        bool _offerSubnames,
-        IRenewalController _renewalController,
         uint64 _minRegistrationDuration, 
         uint64 _maxRegistrationDuration,
         uint16 _minChars,
         uint16 _maxChars
-    ) public{
-
-        // If the allow list is being used then check to make sure the caller is on the allow list.
-        if (!allowListDisabled && !allowList[parentNode]){
-            revert UnauthorizedAddress(parentNode);
-        }
-
-        // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
-        if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
-            revert UnauthorizedAddress(parentNode);
-        }
+    ) public onlyOwner {
 
         // Set the pricing for subnames of the parent node.
-        pricingData[parentNode].offerSubnames = _offerSubnames;
-        pricingData[parentNode].renewalController = _renewalController;
         pricingData[parentNode].minRegistrationDuration = _minRegistrationDuration;
         pricingData[parentNode].maxRegistrationDuration = _maxRegistrationDuration;
         pricingData[parentNode].minChars = _minChars;
@@ -257,22 +197,14 @@ contract L2EthRegistrar is
     */  
 
      function setPricingForAllLengths(
-        bytes32 parentNode,
         uint256[] calldata _charAmounts
-    ) public {
-
-        // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
-        if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
-            revert UnauthorizedAddress(parentNode);
-        }
+    ) public onlyOwner {
 
         // Clear the old dynamic array out
-        delete pricingData[parentNode].charAmounts;
+        delete charAmounts;
 
         // Set the pricing for subnames of the parent node.
-        pricingData[parentNode].charAmounts = _charAmounts;
+        charAmounts = _charAmounts;
         
     }
 
@@ -280,8 +212,8 @@ contract L2EthRegistrar is
      * @notice Get the price for a single character length, e.g. three characters.
      * @param charLength The character length, e.g. 3 would be for three characters. Use 0 for the default amount.
      */
-    function getPriceDataForLength(bytes32 parentNode, uint16 charLength) public view returns (uint256){
-        return pricingData[parentNode].charAmounts[charLength];
+    function getPriceDataForLength(uint16 charLength) public view returns (uint256){
+        return charAmounts[charLength];
     }
 
     /**
@@ -290,23 +222,15 @@ contract L2EthRegistrar is
      * @param charAmount The amount in USD/year for a character count, e.g. amount for three characters.
      */
     function updatePriceForCharLength(
-        bytes32 parentNode,
         uint16 charLength,
         uint256 charAmount
-    ) public {
-
-        // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
-        if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
-            revert UnauthorizedAddress(parentNode);
-        }
+    ) public onlyOwner {
 
         // Check that the charLength is not greater than the last index of the charAmounts array.
-        if (charLength > pricingData[parentNode].charAmounts.length-1){
+        if (charLength > charAmounts.length-1){
             revert CannotSetNewCharLengthAmounts();
         }
-        pricingData[parentNode].charAmounts[charLength] = charAmount;
+        charAmounts[charLength] = charAmount;
     }
 
 
@@ -316,44 +240,18 @@ contract L2EthRegistrar is
      * for a character count, e.g. amount for three characters.
      */
     function addNextPriceForCharLength(
-        bytes32 parentNode,
         uint256 charAmount
-    ) public {
+    ) public onlyOwner {
 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
-        if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
-            revert UnauthorizedAddress(parentNode);
-        }
-
-        pricingData[parentNode].charAmounts.push(charAmount);
+        charAmounts.push(charAmount);
     }
 
     /**
      * @notice Get the last length for a character length that has a price (can be 0), e.g. three characters.
      * @return The length of the last character length that was set.
      */
-    function getLastCharIndex(bytes32 parentNode) public view returns (uint256) {
-        return pricingData[parentNode].charAmounts.length - 1;
-    }
-
-    /**
-     * @notice Allows for chaning the offer status of subnames to true or false.
-     * @param _offerSubnames A bool indicating the parent name owner is offering subnames.
-     */
-    function setOfferSubnames(
-        bytes32 parentNode,
-        bool _offerSubnames
-    ) public {
-
-        // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
-        if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
-            revert UnauthorizedAddress(parentNode);
-        }
-
-        pricingData[parentNode].offerSubnames = _offerSubnames;
+    function getLastCharIndex() public view returns (uint256) {
+        return charAmounts.length - 1;
     }
 
     /**
@@ -371,24 +269,22 @@ contract L2EthRegistrar is
         // Get the label from the _name. 
         (string memory label, ) = name.getFirstLabel();
 
-        // The name is presumed to be available if it has not been registered
-        // in the ENS registry and the parent is offering subnames. If the parent owner revokes
-        // the authorization of this contract, then this function will still return true, but
+        // The name is presumed to be available if it has not been registered and it is a valid length.
+        // If the parent owner revokes the authorization of this contract, then this function will still return true, but
         // registration will not be possible. 
 
         return validLength(node, label) && 
-            ens.owner(node) == address(0) &&
-            pricingData[parentNode].offerSubnames;
+            ens.owner(node) == address(0);
 
     }
 
     /**
      * @notice Check to see if the name is available for registration. 
-     * @param name The full name, in DNS format wherein the length precedes each label
+     * @param label The label in bytes, "vitalik" for vitalik.eth.
      * and is terminted with a 0x0 byte, e.g. "cb.id" => [0x02,0x63,0x62,0x02,0x69,0x64,0x00].
      */
     function makeCommitment(
-        bytes memory name,
+        bytes memory label,
         address owner,
         bytes32 secret
     ) public pure returns (bytes32) {
@@ -396,7 +292,7 @@ contract L2EthRegistrar is
         return
             keccak256(
                 abi.encode(
-                    name,
+                    label,
                     owner,
                     secret
                 )
@@ -412,7 +308,7 @@ contract L2EthRegistrar is
 
     /**
      * @notice Register a name.
-     * @param name The full name, in DNS format.
+     * @param label The full name, in DNS format.
      * @param owner The address that will own the name.
      * @param referrer The address that referred the owner to the registrar.
      * @param duration The duration in seconds of the registration.
@@ -422,7 +318,7 @@ contract L2EthRegistrar is
      */
 
     function register(
-        bytes calldata name,
+        bytes calldata label,
         address owner,
         address referrer,
         uint256 duration,
@@ -431,53 +327,24 @@ contract L2EthRegistrar is
         uint32 fuses
     ) public payable {
 
-        bytes32 parentNode;
-        bytes32 node;
-
-        // Create a block to solve a stack too deep error.
-        {
-            (bytes32 labelhash, uint256 offset) = name.readLabel(0);
-            parentNode = name.namehash(offset);
-            node = _makeNode(parentNode, labelhash);
-        }
+        // the labelhash of the label.
+        labelhash = keccak256(label);
+        node = _makeNode(ETH_NODE, labelhash);
 
         // Check to make sure the duration is between the min and max. 
-        if (duration < pricingData[parentNode].minRegistrationDuration ||
-            duration > pricingData[parentNode].maxRegistrationDuration){
+        if (duration < minRegistrationDuration ||
+            duration > maxRegistrationDuration){
             revert InvalidDuration(duration); 
         }
 
         address parentOwner = nameWrapper.ownerOf(uint256(parentNode));
 
-        // Create a block to solve a stack too deep error.
-        {
-            // Get the label from the _name. 
-            (string memory label, ) = name.getFirstLabel();
-
-            // Check to make sure the label is a valid length.
-            if(!validLength(node, label)){
-                revert WrongNumberOfChars(label);
-            }
-        }
-
-        // Check to make sure the owner is offering names.
-        if (!pricingData[parentNode].offerSubnames){
-            revert NameNotAvailable(name);
+        // Check to make sure the label is a valid length.
+        if(!validLength(label)){
+            revert WrongNumberOfChars(label);
         }
 
         uint64 expires =  uint64(block.timestamp + duration);
-
-        // Create a block to solve a stack too deep error.
-        {
-            // Get the expiry of the parent. 
-            (,, uint64 maxExpiry) = nameWrapper.getData(uint256(parentNode));
-
-            // Set the expiry to the max expiry if the duration is too long.
-            if (expires > maxExpiry) {
-                duration = maxExpiry - block.timestamp;
-                expires = maxExpiry;
-            }
-        }
 
         // Get the price for the duration.
         (uint256 price,) = rentPrice(name, duration);
@@ -489,10 +356,6 @@ contract L2EthRegistrar is
 
         // Create a block to solve a stack too deep error.
         {
-            // Calculate the amount to be given to the owner of the contract. 
-            // We don't need a balance for the owner of the contract because the owner
-            // can withdraw any funds in the contract minus total balances. 
-            uint256 ownerAmount = price * ownerCut / 10000;
 
             uint256 referrerAmount;
 
@@ -506,34 +369,31 @@ contract L2EthRegistrar is
                 balances[referrer] += referrerAmount;
             }
 
-            // Increase the owner of the parent name's balance minus the
-            // referrer amount and the owner amount.
-            balances[parentOwner] += price - referrerAmount - ownerAmount;
-
-            //increment the total balances
-            totalBalance += price - ownerAmount;        
+            //increase the total balances of the referrers.
+            totalBalance += referrerAmount;        
         }
 
         _burnCommitment(
             duration,
             makeCommitment(
-                name,
+                label,
                 owner,
                 secret
             )
         );
 
-        subnameWrapper.registerAndWrap(
-            name,
+        nameWrapper.setSubnodeRecord(
+            ETH_NODE,
+            string(label),
             owner,
             resolver,
-            fuses | CANNOT_UNWRAP | PARENT_CANNOT_CONTROL | CAN_EXTEND_EXPIRY,
-            expires,
-            pricingData[parentNode].renewalController
+            0, // TTL
+            fuses | IS_DOT_ETH | CANNOT_UNWRAP | PARENT_CANNOT_CONTROL | CAN_EXTEND_EXPIRY,
+            expires
         );
 
         emit SubnameRegistered(
-            name,
+            label,
             node,
             owner,
             price,
