@@ -173,6 +173,7 @@ contract L2EthRegistrar is
     /**
      * @notice Set the pricing for subnames of the parent name.
      * @param _minRegistrationDuration The minimum duration a name can be registered for.
+     * @param _maxRegistrationDuration The maximum duration a name can be registered for.
      * @param _minChars The minimum length a name can be.
      * @param _maxChars The maximum length a name can be.
      */
@@ -284,7 +285,7 @@ contract L2EthRegistrar is
      * and is terminted with a 0x0 byte, e.g. "cb.id" => [0x02,0x63,0x62,0x02,0x69,0x64,0x00].
      */
     function makeCommitment(
-        bytes memory label,
+        string memory label,
         address owner,
         bytes32 secret
     ) public pure returns (bytes32) {
@@ -318,7 +319,7 @@ contract L2EthRegistrar is
      */
 
     function register(
-        bytes calldata label,
+        string calldata label,
         address owner,
         address referrer,
         uint256 duration,
@@ -328,7 +329,7 @@ contract L2EthRegistrar is
     ) public payable {
 
         // the labelhash of the label.
-        labelhash = keccak256(label);
+        labelhash = keccak256(bytes(label));
         node = _makeNode(ETH_NODE, labelhash);
 
         // Check to make sure the duration is between the min and max. 

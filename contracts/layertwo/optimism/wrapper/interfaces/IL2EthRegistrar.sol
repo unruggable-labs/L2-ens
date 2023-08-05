@@ -11,7 +11,7 @@ import {IRenewalController} from "contracts/subwrapper/interfaces/IRenewalContro
 interface IL2EthRegistrar {
 
     event SubnameRegistered(
-        bytes name,
+        string label,
         bytes32 indexed node,
         address indexed owner,
         uint256 price,
@@ -25,7 +25,6 @@ interface IL2EthRegistrar {
     );
 
     function rentPrice(
-        bytes memory name, 
         uint256 duration
     )
         external
@@ -33,9 +32,6 @@ interface IL2EthRegistrar {
         returns (uint256 weiPrice, uint256 usdPrice);
 
     function setParams(
-        bytes32 parentNode,
-        bool _offerSubnames,
-        IRenewalController _renewalController,
         uint64 _minRegistrationDuration,
         uint64 _maxRegistrationDuration,
         uint16 _minChars,
@@ -43,37 +39,28 @@ interface IL2EthRegistrar {
     ) external;
 
     function setPricingForAllLengths(
-        bytes32 parentNode,
         uint256[] calldata _charAmounts
     ) external;
 
     function getPriceDataForLength(
-        bytes32 parentNode, 
         uint16 charLength
     ) external view returns (uint256);
 
     function updatePriceForCharLength(
-        bytes32 parentNode,
         uint16 charLength,
         uint256 charAmount
     ) external;
 
     function addNextPriceForCharLength(
-        bytes32 parentNode,
         uint256 charAmount
     ) external;
 
     function getLastCharIndex(bytes32 parentNode) external view returns (uint256);
 
-    function setOfferSubnames(
-        bytes32 parentNode,
-        bool _offerSubnames
-    ) external;
-
     function available(bytes memory name) external returns (bool);
 
     function makeCommitment(
-        bytes memory name,
+        string memory label,
         address owner,
         bytes32 secret
     ) external pure returns (bytes32);
@@ -81,7 +68,7 @@ interface IL2EthRegistrar {
     function commit(bytes32 commitment) external;
 
     function register(
-        bytes calldata name,
+        string calldata label,
         address owner,
         address referrer,
         uint256 duration,
