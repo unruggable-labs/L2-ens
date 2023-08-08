@@ -1,16 +1,15 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {SubnameWrapper} from "contracts/subwrapper/SubnameWrapper.sol";
-import {SubnameRegistrar, UnauthorizedAddress} from "contracts/subwrapper/SubnameRegistrar.sol";
+import {L2SubnameRegistrar, UnauthorizedAddress} from "optimism/wrapper/L2SubnameRegistrar.sol";
 import {ISubnameRegistrar} from "contracts/subwrapper/interfaces/ISubnameRegistrar.sol";
-import {NameWrapper} from "ens-contracts/wrapper/NameWrapper.sol";
+import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
-import {BaseRegistrarImplementation} from "ens-contracts/ethregistrar/BaseRegistrarImplementation.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
 import {PublicResolver} from "ens-contracts/resolvers/PublicResolver.sol";
-import {INameWrapper, CANNOT_UNWRAP} from "ens-contracts/wrapper/INameWrapper.sol";
+import {IL2NameWrapper, CANNOT_UNWRAP} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {INameWrapper} from "ens-contracts/wrapper/INameWrapper.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
@@ -51,13 +50,11 @@ contract SubnameRegistrarTest is Test, GasHelpers {
     address customResolver = 0x0000000000000000000000000000000000000007;
 
     ENSRegistry ens; 
-    BaseRegistrarImplementation baseRegistrar;
     StaticMetadataService staticMetadataService;
     ReverseRegistrar reverseRegistrar;
-    NameWrapper nameWrapper;
+    L2NameWrapper nameWrapper;
     PublicResolver publicResolver;
-    SubnameWrapper subnameWrapper;
-    SubnameRegistrar subnameRegistrar;
+    L2SubnameRegistrar subnameRegistrar;
     USDOracleMock usdOracle;
 
     uint256 testNumber;
@@ -75,72 +72,61 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         // Deploy the ENS registry.
         ens = new ENSRegistry(); 
 
-        // Deploy the .eth registrar.
-        baseRegistrar = new BaseRegistrarImplementation(ens, ETH_NODE);
-
         // Deploy a reverse registrar.
         reverseRegistrar = new ReverseRegistrar(ens);
         // Set the reverse registrar as the owner of the reverse node.
         ens.setSubnodeOwner(ROOT_NODE, keccak256("reverse"), account);
         ens.setSubnodeOwner(bytes("\x07reverse\x00").namehash(0), keccak256("addr"), address(reverseRegistrar));
         
-        // Set up .eth in the ENS registry.
-        ens.setSubnodeOwner(ROOT_NODE, ETH_LABELHASH, address(baseRegistrar));
-        assertEq(ens.owner(ETH_NODE), address(baseRegistrar));
-
         // Deploy a metadata service.
         staticMetadataService = new StaticMetadataService("testURI");
 
         usdOracle = new USDOracleMock();
 
         // Deploy the name wrapper. 
-        nameWrapper = new NameWrapper(
+        nameWrapper = new L2NameWrapper(
             ens, 
-            baseRegistrar,
             IMetadataService(address(staticMetadataService))
         );
 
-        // Approve the name wrapper as a controller of the ENS registry.
-        ens.setApprovalForAll(address(nameWrapper), true);
+        // Set up .eth in the ENS registry.
+        ens.setSubnodeOwner(ROOT_NODE, ETH_LABELHASH, address(nameWrapper));
+        assertEq(ens.owner(ETH_NODE), address(nameWrapper));
 
-        // Allow the name wrapper to control the .eth registrar.
-        baseRegistrar.addController(address(nameWrapper));    
-        assertEq(baseRegistrar.controllers(address(nameWrapper)), true);
+        // Approve the name wrapper as a controller of the ENS registry.
+        // ens.setApprovalForAll(address(nameWrapper), true); // @audit - this is not needed.
 
         // Deploy the public resolver.
         publicResolver = new PublicResolver(ens, INameWrapper(address(nameWrapper)), address(0), address(0));
 
-        // Deploy the subname wrapper.
-        subnameWrapper = new SubnameWrapper(
-            ens,
-            IMetadataService(address(staticMetadataService)),
-            INameWrapper(address(nameWrapper)),
-            Resolver(address(publicResolver))
-        );
-
         // Deploy the Subname Registrar.
-        subnameRegistrar = new SubnameRegistrar(
+        subnameRegistrar = new L2SubnameRegistrar(
             60, //one minute
             604800, //one week
             ens,
             nameWrapper,
-            subnameWrapper,
             usdOracle
         );
 
-        // Register a 2LD .eth name in the NameWrapper
+        // Allow the "account" to register names in the name wrapper.
         nameWrapper.setController(account, true);
-        nameWrapper.registerAndWrapETH2LD(
+
+        // Register a 2LD .eth name in the NameWrapper
+        nameWrapper.registerAndWrapEth2LD(
             "abc", 
             account,
+            address(0), //no approved contract
             twoYears,
             address(publicResolver),
             uint16(CANNOT_UNWRAP)
         );
 
-        // In order to register subnames using the subname wrapper, the owner of the 
-        // parent name needs to approve all for the subname wrapper in the name wrapper.  
-        nameWrapper.setApprovalForAll(address(subnameWrapper), true);
+        // Revoke the approval for "account".
+        nameWrapper.setController(account, false);
+
+        // In order to register subnames using the L2 subname wrapper, the owner of the 
+        // parent name "account" needs to approve all for the subname wrapper in the name wrapper.  
+        nameWrapper.setApprovalForAll(address(subnameRegistrar), true);
     }
 
     function registerAndWrap(address _account) internal returns (bytes32){
@@ -174,9 +160,6 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             parentNode, 
             charAmounts
         );
-
-        // Approve the subname registrar to allow for subnames to be created by it on our behalf. 
-        subnameWrapper.setApprovalForAll(address(subnameRegistrar), true);
 
         // Set the caller to _account and give the account 10 ETH.
         vm.stopPrank();
@@ -213,7 +196,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
     }
     // Create a Subheading using an empty function.
     function test1000_________________________________________________________________________() public {}
-    function test2000__________________________SUBNAME_REGISTRAR_FUNCTIONS____________________() public {}
+    function test2000_______________________L2_SUBNAME_REGISTRAR_FUNCTIONS____________________() public {}
     function test3000_________________________________________________________________________() public {}
 
     //Check to make sure the subname wrapper contract supports interface detection. 
@@ -232,15 +215,12 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         bytes32 node = registerAndWrap(account2);
 
-        // Check to make sure the subname was created and subnameWrapper is the owner. 
-        assertEq(nameWrapper.ownerOf(uint256(node)), address(subnameWrapper));
-
         // Check to make sure the subname was wrapped and account2 is the owner. 
-        assertEq(subnameWrapper.ownerOf(uint256(node)), account2);
+        assertEq(nameWrapper.ownerOf(uint256(node)), account2);
 
         // Check to make sure the renewal controller is set up. 
-        ( , IRenewalController _renewalController, ) = subnameWrapper.getData(uint256(node));
-        assertEq(address(_renewalController), address(subnameRegistrar));
+        address _renewalController = nameWrapper.getApproved(uint256(node));
+        assertEq(_renewalController, address(subnameRegistrar));
 
         // Get the price for renewing the domain for a year. 
         (uint256 weiAmount,) = subnameRegistrar.rentPrice(
@@ -676,13 +656,9 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         stopMeasuringGas();
 
-        // Check to make sure the subname is owned by account2 in the Subname Wrapper.
-        assertEq(subnameWrapper.ownerOf(uint256(node)), account2);
-
-        // Check to make sure the subname is owned the Subname Wrapper in the Name Wrapper.
-        assertEq(nameWrapper.ownerOf(uint256(node)), address(subnameWrapper));
+        // Check to make sure the subname is owned account2 in the Name Wrapper.
+        assertEq(nameWrapper.ownerOf(uint256(node)), account2);
         
-
         vm.stopPrank();
         vm.startPrank(account);
 
@@ -716,7 +692,6 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             account2, 
             bytes32(uint256(0x7878))
         );
-
 
         subnameRegistrar.commit(commitment);
 
@@ -763,11 +738,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             0 /* fuses */
         );
 
-        // Check to make sure the subname is owned by account2 in the Subname Wrapper.
-        assertEq(subnameWrapper.ownerOf(uint256(node)), account2);
-
-        // Check to make sure the subname is owned the Subname Wrapper in the Name Wrapper.
-        assertEq(nameWrapper.ownerOf(uint256(node)), address(subnameWrapper));
+        // Check to make sure the subname is owned account2 in the Name Wrapper.
+        assertEq(nameWrapper.ownerOf(uint256(node)), account2);
         
 
         vm.stopPrank();
