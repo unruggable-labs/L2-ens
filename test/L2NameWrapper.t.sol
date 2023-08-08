@@ -116,6 +116,9 @@ contract L2NameWrapperTest is Test, GasHelpers {
             uint16(0)
         );
 
+        // Now that the name has been registered remove the controller.
+        nameWrapper.setController(account, false);
+
     }
 
     function registerAndWrap(address _account, address _approved) internal returns (bytes32 node){
