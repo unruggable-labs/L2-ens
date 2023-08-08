@@ -2,14 +2,13 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {SubnameWrapper} from "contracts/subwrapper/SubnameWrapper.sol";
-import {SubnameRegistrar, UnauthorizedAddress} from "contracts/subwrapper/SubnameRegistrar.sol";
-import {ISubnameRegistrar} from "contracts/subwrapper/interfaces/ISubnameRegistrar.sol";
-import {NameWrapper} from "ens-contracts/wrapper/NameWrapper.sol";
+import {L2EthRegistrar, UnauthorizedAddress} from "optimism/wrapper/L2EthRegistrar.sol";
+import {IL2EthRegistrar} from "optimism/wrapper/interfaces/IL2EthRegistrar.sol";
+import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
-import {BaseRegistrarImplementation} from "ens-contracts/ethregistrar/BaseRegistrarImplementation.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
 import {PublicResolver} from "ens-contracts/resolvers/PublicResolver.sol";
+import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {INameWrapper, CANNOT_UNWRAP} from "ens-contracts/wrapper/INameWrapper.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
@@ -26,7 +25,7 @@ error UnexpiredCommitmentExists(bytes32 commitment);
 error ZeroLengthLabel();
 error InvalidDuration(uint256 duration);
 
-contract SubnameRegistrarTest is Test, GasHelpers {
+contract L2EthRegistrarTest is Test, GasHelpers {
 
     uint64 private constant GRACE_PERIOD = 90 days;
     bytes32 private constant ETH_NODE =
@@ -51,13 +50,11 @@ contract SubnameRegistrarTest is Test, GasHelpers {
     address customResolver = 0x0000000000000000000000000000000000000007;
 
     ENSRegistry ens; 
-    BaseRegistrarImplementation baseRegistrar;
     StaticMetadataService staticMetadataService;
     ReverseRegistrar reverseRegistrar;
-    NameWrapper nameWrapper;
+    L2NameWrapper nameWrapper;
     PublicResolver publicResolver;
-    SubnameWrapper subnameWrapper;
-    SubnameRegistrar subnameRegistrar;
+    L2EthRegistrar ethRegistrar;
     USDOracleMock usdOracle;
 
     uint256 testNumber;
@@ -75,94 +72,52 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         // Deploy the ENS registry.
         ens = new ENSRegistry(); 
 
-        // Deploy the .eth registrar.
-        baseRegistrar = new BaseRegistrarImplementation(ens, ETH_NODE);
-
         // Deploy a reverse registrar.
         reverseRegistrar = new ReverseRegistrar(ens);
         // Set the reverse registrar as the owner of the reverse node.
         ens.setSubnodeOwner(ROOT_NODE, keccak256("reverse"), account);
         ens.setSubnodeOwner(bytes("\x07reverse\x00").namehash(0), keccak256("addr"), address(reverseRegistrar));
         
-        // Set up .eth in the ENS registry.
-        ens.setSubnodeOwner(ROOT_NODE, ETH_LABELHASH, address(baseRegistrar));
-        assertEq(ens.owner(ETH_NODE), address(baseRegistrar));
-
         // Deploy a metadata service.
         staticMetadataService = new StaticMetadataService("testURI");
 
         usdOracle = new USDOracleMock();
 
-        // Deploy the name wrapper. 
-        nameWrapper = new NameWrapper(
+        // Deploy the L2 name wrapper. 
+        nameWrapper = new L2NameWrapper(
             ens, 
-            baseRegistrar,
             IMetadataService(address(staticMetadataService))
         );
 
-        // Approve the name wrapper as a controller of the ENS registry.
-        ens.setApprovalForAll(address(nameWrapper), true);
+        // Set up .eth in the ENS registry.
+        ens.setSubnodeOwner(ROOT_NODE, ETH_LABELHASH, address(nameWrapper));
+        assertEq(ens.owner(ETH_NODE), address(nameWrapper));
 
-        // Allow the name wrapper to control the .eth registrar.
-        baseRegistrar.addController(address(nameWrapper));    
-        assertEq(baseRegistrar.controllers(address(nameWrapper)), true);
+        // Approve the name wrapper as a controller of the ENS registry.
+        //ens.setApprovalForAll(address(nameWrapper), true); // @audit - I don't think this is necessary
 
         // Deploy the public resolver.
         publicResolver = new PublicResolver(ens, INameWrapper(address(nameWrapper)), address(0), address(0));
 
-        // Deploy the subname wrapper.
-        subnameWrapper = new SubnameWrapper(
-            ens,
-            IMetadataService(address(staticMetadataService)),
-            INameWrapper(address(nameWrapper)),
-            Resolver(address(publicResolver))
-        );
 
-        // Deploy the Subname Registrar.
-        subnameRegistrar = new SubnameRegistrar(
+        // Deploy the L2 Eth Registrar.
+        ethRegistrar = new L2EthRegistrar(
             60, //one minute
             604800, //one week
             ens,
             nameWrapper,
-            subnameWrapper,
             usdOracle
         );
 
-        // Register a 2LD .eth name in the NameWrapper
-        nameWrapper.setController(account, true);
-        nameWrapper.registerAndWrapETH2LD(
-            "abc", 
-            account,
-            twoYears,
-            address(publicResolver),
-            uint16(CANNOT_UNWRAP)
+        // Set params for the L2 Eth Registrar.
+        ethRegistrar.setParams(
+            oneMonth, 
+            type(uint64).max, //no maximum length of time. 
+            3, // min three characters 
+            255 // max 255 characters
         );
 
-        // In order to register subnames using the subname wrapper, the owner of the 
-        // parent name needs to approve all for the subname wrapper in the name wrapper.  
-        nameWrapper.setApprovalForAll(address(subnameWrapper), true);
-    }
-
-    function registerAndWrap(address _account) internal returns (bytes32){
-
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
-        (bytes32 labelhash, ) = bytes("\x03abc\x03eth\x00").readLabel(0);
-
-        // Add the parentNode to the allow list.
-        subnameRegistrar.allowName(bytes("\x03abc\x03eth\x00"), true);
-
-        // Set the registration parameters for subnames of the parent name.
-        subnameRegistrar.setParams(
-            parentNode, 
-            true, 
-            IRenewalController(address(subnameRegistrar)), 
-            3600, 
-            type(uint64).max,
-            1, 
-            255 
-        );
-
-        // Set the pricing for the subname registrar. 
+        // Set the pricing for the name registrar. 
         // Not that there are 4 elements, but only the fist three have been defined. 
         // This has been done to make sure that nothing breaks even if one is not defined. 
         uint256[] memory charAmounts = new uint256[](4);
@@ -170,35 +125,37 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         charAmounts[1] = 158548959918;
         charAmounts[2] = 0;
 
-        subnameRegistrar.setPricingForAllLengths(
-            parentNode, 
+        ethRegistrar.setPricingForAllLengths(
             charAmounts
         );
 
-        // Approve the subname registrar to allow for subnames to be created by it on our behalf. 
-        subnameWrapper.setApprovalForAll(address(subnameRegistrar), true);
+        // Set the L2 Eth Registrar as the controller of the name so we can use it to register names. 
+        nameWrapper.setController(address(ethRegistrar), true);
+    }
+
+    function registerAndWrap(address _account) internal returns (bytes32){
 
         // Set the caller to _account and give the account 10 ETH.
         vm.stopPrank();
         vm.startPrank(_account);
         vm.deal(_account, 10000000000000000000);
 
-        bytes32 commitment = subnameRegistrar.makeCommitment(
-            "\x03xyz\x03abc\x03eth\x00", 
+        bytes32 commitment = ethRegistrar.makeCommitment(
+            "abc", 
             _account, 
             bytes32(uint256(0x4453))
         );
 
-        subnameRegistrar.commit(commitment);
+        ethRegistrar.commit(commitment);
 
         // Advance the timestamp by 61 seconds.
         skip(61);
 
-        // Register the subname, and overpay with 1 ETH.
-        subnameRegistrar.register{value: 1000000000000000000}(
-            "\x03xyz\x03abc\x03eth\x00",
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            "abc",
             _account,
-            account, //referrer
+            accountReferrer, //referrer
             oneYear,
             bytes32(uint256(0x4453)), 
             address(publicResolver), 
@@ -208,43 +165,34 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         vm.stopPrank();
         vm.startPrank(account);
 
-        return bytes("\x03xyz\x03abc\x03eth\x00").namehash(0);
+        return bytes("\x03abc\x03eth\x00").namehash(0);
 
     }
     // Create a Subheading using an empty function.
     function test1000_________________________________________________________________________() public {}
-    function test2000__________________________SUBNAME_REGISTRAR_FUNCTIONS____________________() public {}
+    function test2000__________________________L2_ETH_REGISTRAR_FUNCTIONS_____________________() public {}
     function test3000_________________________________________________________________________() public {}
 
-    //Check to make sure the subname wrapper contract supports interface detection. 
+    //Check to make sure the name wrapper contract supports interface detection. 
     function test_001____supportsInterface___________SupportsCorrectInterfaces() public {
 
-        // Check for the ISubnameWrapper interface.  
-        assertEq(subnameRegistrar.supportsInterface(type(ISubnameRegistrar).interfaceId), true);
+        // Check for the IL2NameWrapper interface.  
+        assertEq(ethRegistrar.supportsInterface(type(IL2EthRegistrar).interfaceId), true);
 
         // Check for the IERC165 interface.  
-        assertEq(subnameRegistrar.supportsInterface(type(IERC165).interfaceId), true);
+        assertEq(ethRegistrar.supportsInterface(type(IERC165).interfaceId), true);
     }
 
     function test_002____rentPrice___________________RentPriceWasSetCorrectly() public{
 
-
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         bytes32 node = registerAndWrap(account2);
 
-        // Check to make sure the subname was created and subnameWrapper is the owner. 
-        assertEq(nameWrapper.ownerOf(uint256(node)), address(subnameWrapper));
-
-        // Check to make sure the subname was wrapped and account2 is the owner. 
-        assertEq(subnameWrapper.ownerOf(uint256(node)), account2);
-
-        // Check to make sure the renewal controller is set up. 
-        ( , IRenewalController _renewalController, ) = subnameWrapper.getData(uint256(node));
-        assertEq(address(_renewalController), address(subnameRegistrar));
+        // Check to make sure the name was created and account2 is the owner. 
+        assertEq(nameWrapper.ownerOf(uint256(node)), account2);
 
         // Get the price for renewing the domain for a year. 
-        (uint256 weiAmount,) = subnameRegistrar.rentPrice(
-            bytes("\x03xyz\x03abc\x03eth\x00"), 
+        (uint256 weiAmount,) = ethRegistrar.rentPrice(
+            bytes("\x03abc\x03eth\x00"), 
             oneYear 
         );
 
@@ -257,142 +205,26 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         assertTrue(weiAmount/10**10 == expectedPrice/10**10);
     }
 
-    function test_003____allowName___________________ANameCanBeAddedAndRemovedFromTheAllowList() public{
+    function test_005____setParams___________________SetTheRegistrationParameters() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
-
-        // Expect to revert if the name is not allowed with a custom error UnauthorizedAddress
-        vm.expectRevert( abi.encodeWithSelector(UnauthorizedAddress.selector, parentNode));
-
-        subnameRegistrar.setParams(
-            parentNode, 
-            false, 
-            renewalController, 
-            3601, 
-            type(uint64).max,
-            2, 
-            254
-        );
-
-        subnameRegistrar.allowName(bytes("\x03abc\x03eth\x00"),true);
-
-        assertEq(subnameRegistrar.allowList(parentNode), true);
-
-        subnameRegistrar.setParams(
-            parentNode, 
-            false, 
-            renewalController, 
-            3601, 
-            type(uint64).max,
-            2, 
-            254
-        );
-
-        // Check to make sure the params have been set correctly. 
-        (   bool _offerSubames, 
-            IRenewalController _renewalController, 
-            uint64 _minRegistrationDuration, 
-            uint64 _maxRegistrationDuration,
-            uint16 _minChars, 
-            uint16 _maxChars
-        ) = subnameRegistrar.pricingData(parentNode);
-
-        assertEq(_offerSubames, false);
-        assertEq(address(_renewalController), address(renewalController));
-        assertEq(_minRegistrationDuration, 3601);
-        assertEq(_maxRegistrationDuration, type(uint64).max);
-        assertEq(_minChars, 2);
-        assertEq(_maxChars, 254);
-
-    }
-
-    function test_004____disableAllowList____________AllowListCanBeDisabled() public{
-
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
-
-        subnameRegistrar.allowName(bytes("\x03abc\x03eth\x00"), false);
-
-        //expect to revert if the name is not allowed with a custom error UnauthorizedAddress
-        vm.expectRevert( abi.encodeWithSelector(UnauthorizedAddress.selector, parentNode));
-
-        subnameRegistrar.setParams(
-            parentNode, 
-            false, 
-            renewalController, 
-            3601, 
-            type(uint64).max,
-            2, 
-            254
-        );
-
-        subnameRegistrar.disableAllowList();
-
-        subnameRegistrar.setParams(
-            parentNode, 
-            false, 
-            renewalController, 
-            3601, 
-            type(uint64).max,
-            2, 
-            254
-        );
-
-        // Check to make sure the params have been set correctly. 
-        (   bool _offerSubames, 
-            IRenewalController _renewalController, 
-            uint64 _minRegistrationDuration, 
-            uint64 _maxRegistrationDuration,
-            uint16 _minChars, 
-            uint16 _maxChars
-        ) = subnameRegistrar.pricingData(parentNode);
-
-        assertEq(_offerSubames, false);
-        assertEq(address(_renewalController), address(renewalController));
-        assertEq(_minRegistrationDuration, 3601);
-        assertEq(_maxRegistrationDuration, type(uint64).max);
-        assertEq(_minChars, 2);
-        assertEq(_maxChars, 254);
-
-    }
-
-    function test_005____setParams___________________SetTheRegistrationParametersForSubnames() public{
-
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
-        bytes32 node = registerAndWrap(account2);
-
-        subnameRegistrar.setParams(
-            parentNode, 
-            false, 
-            renewalController, 
+        ethRegistrar.setParams(
             3601, 
             type(uint64).max,
             2, 
             254 
         );
 
-        // Check to make sure the params have been set correctly. 
-        (   bool _offerSubames, 
-            IRenewalController _renewalController, 
-            uint64 _minRegistrationDuration, 
-            uint64 _maxRegistrationDuration,
-            uint16 _minChars, 
-            uint16 _maxChars
-        ) = subnameRegistrar.pricingData(parentNode);
-
-        assertEq(_offerSubames, false);
-        assertEq(address(_renewalController), address(renewalController));
-        assertEq(_minRegistrationDuration, 3601);
-        assertEq(_maxRegistrationDuration, type(uint64).max);
-        assertEq(_minChars, 2);
-        assertEq(_maxChars, 254);
+        assertEq(ethRegistrar.minRegistrationDuration(), 3601);
+        assertEq(ethRegistrar.maxRegistrationDuration(), type(uint64).max);
+        assertEq(ethRegistrar.minChars(), 2);
+        assertEq(ethRegistrar.maxChars(), 254);
     }
 
     function test_006____setPricingForAllLengths_____SetThePriceForAllLengthsOfNamesAtOneTime() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         bytes32 node = registerAndWrap(account2);
 
-        // Set the pricing for the subname registrar. 
+        // Set the pricing for the name registrar. 
         // Not that there are 4 elements, but only the fist three have been defined. 
         // This has been done to make sure that nothing breaks even if one is not defined. 
         uint256[] memory charAmounts = new uint256[](4);
@@ -400,115 +232,87 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         charAmounts[1] = 158548959918;
         charAmounts[2] = 1;
 
-        subnameRegistrar.setPricingForAllLengths(
-            parentNode, 
+        ethRegistrar.setPricingForAllLengths(
             charAmounts
         );
-        assertEq(subnameRegistrar.getPriceDataForLength(parentNode, 0), 158548959918);
-        assertEq(subnameRegistrar.getPriceDataForLength(parentNode, 1), 158548959918);
-        assertEq(subnameRegistrar.getPriceDataForLength(parentNode, 2), 1);
-        assertEq(subnameRegistrar.getPriceDataForLength(parentNode, 3), 0);
+        assertEq(ethRegistrar.getPriceDataForLength(0), 158548959918);
+        assertEq(ethRegistrar.getPriceDataForLength(1), 158548959918);
+        assertEq(ethRegistrar.getPriceDataForLength(2), 1);
+        assertEq(ethRegistrar.getPriceDataForLength(3), 0);
 
     }
 
     function test_007____getPriceDataForLength_______TheAmontForAnySetLengthOfName() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         bytes32 node = registerAndWrap(account2);
 
         // Add a price for the next character (4th character).
-        subnameRegistrar.addNextPriceForCharLength(parentNode, 317097919836);
-        assertEq(subnameRegistrar.getPriceDataForLength(parentNode, uint16(4)), 317097919836);
+        ethRegistrar.addNextPriceForCharLength(317097919836);
+        assertEq(ethRegistrar.getPriceDataForLength(uint16(4)), 317097919836);
 
     }
 
     function test_008____updatePriceForCharLength____UpdateThePriceOfANameLength() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         bytes32 node = registerAndWrap(account2);
 
-        subnameRegistrar.updatePriceForCharLength(parentNode, 3, 317097919836);
+        ethRegistrar.updatePriceForCharLength(3, 317097919836);
 
-        assertEq(subnameRegistrar.getPriceDataForLength(parentNode, 
-        uint16(subnameRegistrar.getLastCharIndex(parentNode))), 317097919836);
+        assertEq(ethRegistrar.getPriceDataForLength(uint16(ethRegistrar.getLastCharIndex())), 317097919836);
 
     }
 
     function test_009____getLastCharIndex____________ReturnsTheLastIndexOfCharAmounts() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         bytes32 node = registerAndWrap(account2);
 
         // Add a price for the next character (4th character).
-        subnameRegistrar.addNextPriceForCharLength(parentNode, 317097919836);
-        assertEq(subnameRegistrar.getLastCharIndex(parentNode), 4);
-    }
-
-    function test_010____setOfferSubnames____________SetOfferSubnamesToFalse() public{
-
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
-        bytes32 node = registerAndWrap(account2);
-
-        // Set the offer subnames to false.
-        subnameRegistrar.setOfferSubnames(parentNode, false);
-
-        // Check to make sure the params have been set correctly. 
-        (   bool _offerSubames, 
-            /*IRenewalController _renewalController*/, 
-            /*uint16 _minRegistrarionDuration*/, 
-            /*uint64 _maxRegistrationDuration*/,
-            /*uint16 _minChars*/, 
-            /*uint16 _maxChars*/
-        ) = subnameRegistrar.pricingData(parentNode);
-
-        assertEq(_offerSubames, false);
-
+        ethRegistrar.addNextPriceForCharLength(317097919836);
+        assertEq(ethRegistrar.getLastCharIndex(), 4);
     }
 
     function test_011____available___________________AvailableToRegister() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         bytes32 node = registerAndWrap(account2);
 
-        assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
-        assertEq(subnameRegistrar.available(bytes("\x05eeeee\x03abc\x03eth\x00")), true);
+        assertEq(ethRegistrar.available(bytes("\x03abc\x03eth\x00")), false);
+        assertEq(ethRegistrar.available(bytes("\x03xyz\x03eth\x00")), true);
 
         // check if a 32 character name is available.
-        assertEq(subnameRegistrar.available(bytes("\x20123456745678asftgesnytfwsdftgnrw\x03abc\x03eth\x00")), true);
+        assertEq(ethRegistrar.available(bytes("\x20123456745678asftgesnytfwsdftgnrw\x03eth\x00")), true);
 
         // add an extra null byte to the end of the name.
         vm.expectRevert(bytes("namehash: Junk at end of name"));
-        subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00\x00"));
+        ethRegistrar.available(bytes("\x03xyz\x03eth\x00\x00"));
 
         // Names with spaces are OK.
-        assertEq(subnameRegistrar.available(bytes("\x04x yz\x03abc\x03eth\x00")), true);
+        assertEq(ethRegistrar.available(bytes("\x04x yz\x03eth\x00")), true);
 
         // Names with the wrong length of the label in the DNS encoding.
         vm.expectRevert(bytes(""));
-        subnameRegistrar.available(bytes("\x05xyz\x03abc\x03eth\x00"));
+        ethRegistrar.available(bytes("\x05xyz\x03eth\x00"));
 
         // Names with the a zero length of the label in the DNS encoding.
         vm.expectRevert(bytes(""));
-        subnameRegistrar.available(bytes("\x00\x03abc\x03eth\x00"));
+        ethRegistrar.available(bytes("\x00\x03eth\x00"));
 
 
     }
 
     function test_012____makeCommitment______________CommitAndRegisterAName() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         bytes32 node = registerAndWrap(account2);
 
-        assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
-        assertEq(subnameRegistrar.available(bytes("\x08coolname\x03abc\x03eth\x00")), true);
+        assertEq(ethRegistrar.available(bytes("\x03abc\x03eth\x00")), false);
+        assertEq(ethRegistrar.available(bytes("\x08coolname\x03eth\x00")), true);
 
-         // Set the caller to _account and give the account 10 ETH.
+         // Set the caller to account2 and give the account 10 ETH.
         vm.stopPrank();
         vm.startPrank(account2);
         vm.deal(account2, 10000000000000000000);
 
-        bytes32 commitment = subnameRegistrar.makeCommitment(
-            "\x08coolname\x03abc\x03eth\x00", 
+        bytes32 commitment = ethRegistrar.makeCommitment(
+            "coolname", 
             account2, 
             bytes32(uint256(0x7878))
         );
@@ -516,7 +320,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         //Check to make sure the commitment is correct.
         bytes32 checkCommitment = keccak256(
                 abi.encode(
-                    "\x08coolname\x03abc\x03eth\x00", 
+                    "coolname", 
                     account2, 
                     bytes32(uint256(0x7878)) 
                 )
@@ -524,14 +328,14 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         assertEq(commitment, checkCommitment);
 
-        subnameRegistrar.commit(commitment);
+        ethRegistrar.commit(commitment);
 
         // Advance the timestamp by 61 seconds.
         skip(61);
 
-        // Register the subname, and overpay with 1 ETH.
-        subnameRegistrar.register{value: 1000000000000000000}(
-            "\x08coolname\x03abc\x03eth\x00",
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            "coolname",
             account2,
             accountReferrer, //referrer
             oneYear,
@@ -539,6 +343,9 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             address(publicResolver), 
             0 /* fuses */
         );
+
+        // check to make sure the name was registered by checking the owner
+        assertEq(nameWrapper.ownerOf(uint256(node)), account2);
 
         vm.stopPrank();
         vm.startPrank(account);
@@ -547,35 +354,34 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function test_013____commit______________________CommitCantBeUsedTwice() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         bytes32 node = registerAndWrap(account2);
 
-        assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
-        assertEq(subnameRegistrar.available(bytes("\x08coolname\x03abc\x03eth\x00")), true);
+        assertEq(ethRegistrar.available(bytes("\x03abc\x03eth\x00")), false);
+        assertEq(ethRegistrar.available(bytes("\x08coolname\x03eth\x00")), true);
 
          // Set the caller to account2 and give the account 10 ETH.
         vm.stopPrank();
         vm.startPrank(account2);
         vm.deal(account2, 10000000000000000000);
 
-        bytes32 commitment = subnameRegistrar.makeCommitment(
-            "\x08coolname\x03abc\x03eth\x00", 
+        bytes32 commitment = ethRegistrar.makeCommitment(
+            "coolname", 
             account2, 
             bytes32(uint256(0x7878))
         );
 
-        subnameRegistrar.commit(commitment);
+        ethRegistrar.commit(commitment);
 
         // Expect this to revert becuase the commitment has already been used.
         vm.expectRevert( abi.encodeWithSelector(UnexpiredCommitmentExists.selector, commitment));
-        subnameRegistrar.commit(commitment);
+        ethRegistrar.commit(commitment);
 
         // Advance the timestamp by 61 seconds.
         skip(61);
 
-        // Register the subname, and overpay with 1 ETH.
-        subnameRegistrar.register{value: 1000000000000000000}(
-            "\x08coolname\x03abc\x03eth\x00",
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            "coolname",
             account2,
             accountReferrer, //referrer
             oneYear,
@@ -584,6 +390,9 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             0 /* fuses */
         );
 
+        // Make sure the name has been registered by checking the owner.
+        assertEq(nameWrapper.ownerOf(uint256(node)), account2);
+
         vm.stopPrank();
         vm.startPrank(account);
 
@@ -591,11 +400,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function test_014____register____________________RegistersAndWrapsAName() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         bytes32 node = registerAndWrap(account2);
-
-        assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
-        assertEq(subnameRegistrar.available(bytes("\x08coolname\x03abc\x03eth\x00")), true);
 
          // Set the caller to _account and give the account 10 ETH.
         vm.stopPrank();
@@ -605,8 +410,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         logBaseGasCost();
         calculateCalldataGasCost(
             abi.encodeWithSelector(
-                subnameRegistrar.register.selector,
-                "\x08coolname\x03abc\x03eth\x00",
+                ethRegistrar.register.selector,
+                "coolname",
                 account2,
                 accountReferrer, //referrer
                 oneYear,
@@ -619,8 +424,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         startMeasuringGas("Gas usage for making the commitment function: ");
 
-        bytes32 commitment = subnameRegistrar.makeCommitment(
-            "\x08coolname\x03abc\x03eth\x00", 
+        bytes32 commitment = ethRegistrar.makeCommitment(
+            "coolname", 
             account2, 
             bytes32(uint256(0x7878))
         );
@@ -630,19 +435,15 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         logBaseGasCost();
         calculateCalldataGasCost(
             abi.encodeWithSelector(
-                subnameRegistrar.commit.selector,
+                ethRegistrar.commit.selector,
                 commitment
             )
         );
         startMeasuringGas("Gas usage for the commit function: ");
 
-        subnameRegistrar.commit(commitment);
+        ethRegistrar.commit(commitment);
 
         stopMeasuringGas();
-
-        // Expect this to revert becuase the commitment has already been used.
-        //vm.expectRevert( abi.encodeWithSelector(UnexpiredCommitmentExists.selector, commitment));
-        //subnameRegistrar.commit(commitment);
 
         // Advance the timestamp by 61 seconds.
         skip(61);
@@ -650,8 +451,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         logBaseGasCost();
         calculateCalldataGasCost(
             abi.encodeWithSelector(
-                subnameRegistrar.register.selector,
-                "\x08coolname\x03abc\x03eth\x00",
+                ethRegistrar.register.selector,
+                "coolname",
                 account2,
                 accountReferrer, //referrer
                 oneYear,
@@ -663,9 +464,9 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         );
         startMeasuringGas("Gas usage for the register function: ");
 
-        // Register the subname, and overpay with 1 ETH.
-        subnameRegistrar.register{value: 1000000000000000000}(
-            "\x08coolname\x03abc\x03eth\x00",
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            "coolname",
             account2,
             accountReferrer, //referrer
             oneYear,
@@ -676,11 +477,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         stopMeasuringGas();
 
-        // Check to make sure the subname is owned by account2 in the Subname Wrapper.
-        assertEq(subnameWrapper.ownerOf(uint256(node)), account2);
-
-        // Check to make sure the subname is owned the Subname Wrapper in the Name Wrapper.
-        assertEq(nameWrapper.ownerOf(uint256(node)), address(subnameWrapper));
+        // Check to make sure the name is owned the name Wrapper in the Name Wrapper.
+        assertEq(nameWrapper.ownerOf(uint256(node)), account2);
         
 
         vm.stopPrank();
@@ -689,17 +487,13 @@ contract SubnameRegistrarTest is Test, GasHelpers {
     }
     function test_015____register____________________RegistringForTooShortOrLongFails() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         bytes32 node = registerAndWrap(account2);
 
-        assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
-        assertEq(subnameRegistrar.available(bytes("\x08coolname\x03abc\x03eth\x00")), true);
+        assertEq(ethRegistrar.available(bytes("\x03abc\x03eth\x00")), false);
+        assertEq(ethRegistrar.available(bytes("\x08coolname\x03eth\x00")), true);
 
         // Change the params duration to be one year minimum and one year maximum.
-        subnameRegistrar.setParams(
-            parentNode, 
-            true, 
-            renewalController, 
+        ethRegistrar.setParams(
             oneYear, 
             oneYear,
             2, 
@@ -711,24 +505,24 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         vm.startPrank(account2);
         vm.deal(account2, 10000000000000000000);
 
-        bytes32 commitment = subnameRegistrar.makeCommitment(
-            "\x08coolname\x03abc\x03eth\x00", 
+        bytes32 commitment = ethRegistrar.makeCommitment(
+            "coolname", 
             account2, 
             bytes32(uint256(0x7878))
         );
 
 
-        subnameRegistrar.commit(commitment);
+        ethRegistrar.commit(commitment);
 
         // Advance the timestamp by 61 seconds.
         skip(61);
 
         // Expect to revert if the duration is too long with a custom error InvalidDuration
-        vm.expectRevert( abi.encodeWithSelector(InvalidDuration.selector, oneYear+1));
+        vm.expectRevert(abi.encodeWithSelector(InvalidDuration.selector, oneYear+1));
 
-        // Register the subname, and overpay with 1 ETH.
-        subnameRegistrar.register{value: 1000000000000000000}(
-            "\x08coolname\x03abc\x03eth\x00",
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            "coolname",
             account2,
             accountReferrer, //referrer
             oneYear+1,
@@ -738,11 +532,11 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         );
 
         // Expect to revert if the duration is too short with a custom error InvalidDuration
-        vm.expectRevert( abi.encodeWithSelector(InvalidDuration.selector, oneYear-1));
+        vm.expectRevert(abi.encodeWithSelector(InvalidDuration.selector, oneYear-1));
 
-        // Register the subname, and overpay with 1 ETH.
-        subnameRegistrar.register{value: 1000000000000000000}(
-            "\x08coolname\x03abc\x03eth\x00",
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            "coolname",
             account2,
             accountReferrer, //referrer
             oneYear-1,
@@ -752,9 +546,9 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         );
 
         // Go ahead and register the name for a year.  
-        // Register the subname, and overpay with 1 ETH.
-        subnameRegistrar.register{value: 1000000000000000000}(
-            "\x08coolname\x03abc\x03eth\x00",
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            "coolname",
             account2,
             accountReferrer, //referrer
             oneYear,
@@ -763,13 +557,9 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             0 /* fuses */
         );
 
-        // Check to make sure the subname is owned by account2 in the Subname Wrapper.
-        assertEq(subnameWrapper.ownerOf(uint256(node)), account2);
-
-        // Check to make sure the subname is owned the Subname Wrapper in the Name Wrapper.
-        assertEq(nameWrapper.ownerOf(uint256(node)), address(subnameWrapper));
+        // Check to make sure the name is owned "account2" in the L2 Name Wrapper.
+        assertEq(nameWrapper.ownerOf(uint256(node)), account2);
         
-
         vm.stopPrank();
         vm.startPrank(account);
 
