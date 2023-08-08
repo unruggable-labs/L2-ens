@@ -13,6 +13,8 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
+//import foundry console logging.
+import "forge-std/console.sol";
 
 error Unauthorised(bytes32 node, address addr);
 error IncompatibleParent();
@@ -258,17 +260,17 @@ contract L2NameWrapper is
      * @param duration The duration, in seconds, to register the name for.
      * @param resolver The resolver address to set on the ENS registry (optional).
      * @param ownerControlledFuses Initial owner-controlled fuses to set
-     * @return registrarExpiry The expiry date of the new name on the .eth registrar, in seconds since the Unix epoch.
+     * @return expiry The expiry date of the new name, in seconds since the Unix epoch.
      */
 
     function registerAndWrapEth2LD(
         string calldata label,
         address wrappedOwner,
         address approved,
-        uint256 duration,
+        uint64 duration,
         address resolver,
         uint16 ownerControlledFuses
-    ) external onlyController returns (uint256 registrarExpiry) {
+    ) external onlyController returns (uint64 expiry) {
 
         // Create a labelhash from the label.
         bytes32 labelhash = keccak256(bytes(label));
@@ -276,12 +278,14 @@ contract L2NameWrapper is
 
         ens.setSubnodeRecord(ETH_NODE, labelhash, address(this), address(0), 0);
 
+        expiry = uint64(block.timestamp) + duration + GRACE_PERIOD;
+
         _wrapETH2LD(
             label,
             wrappedOwner,
             approved,
             ownerControlledFuses,
-            uint64(registrarExpiry) + GRACE_PERIOD,
+            expiry,
             resolver
         );
     }
@@ -438,7 +442,7 @@ contract L2NameWrapper is
         uint64 expiry
     ) public {
         bytes32 node = _makeNode(parentNode, labelhash);
-        _checkFusesAreSettable(node, fuses);
+        _fusesAreSettable(node, fuses);
         (address owner, uint32 oldFuses, uint64 oldExpiry) = getData(
             uint256(node)
         );
@@ -493,23 +497,22 @@ contract L2NameWrapper is
     ) public onlyTokenOwner(parentNode) returns (bytes32 node) {
         bytes32 labelhash = keccak256(bytes(label));
         node = _makeNode(parentNode, labelhash);
-        _checkCanCallSetSubnodeOwner(parentNode, node);
-        _checkFusesAreSettable(node, fuses);
+        _canCallSetSubnodeOwner(parentNode, node);
+        _fusesAreSettable(node, fuses);
         bytes memory name = _saveLabel(parentNode, node, label);
         expiry = _checkParentFusesAndExpiry(parentNode, node, fuses, expiry);
 
-        if (!_isWrapped(node)) {
-            revert NameIsNotWrapped();
+         if (!_isWrapped(node)) {
+            ens.setSubnodeOwner(parentNode, labelhash, address(this));
+            _wrap(node, name, owner, fuses, expiry);
+        } else {
+            _updateName(parentNode, node, label, owner, fuses, expiry);
         }
-
-        ens.setSubnodeOwner(parentNode, labelhash, address(this));
 
         // Add an approved address
         if (approved != address(0)) {
             super._approve(approved, uint256(node));
         }
-
-        _wrap(node, name, owner, fuses, expiry);
     }
 
     /**
@@ -537,29 +540,36 @@ contract L2NameWrapper is
     ) public onlyTokenOwner(parentNode) returns (bytes32 node) {
         bytes32 labelhash = keccak256(bytes(label));
         node = _makeNode(parentNode, labelhash);
-        _checkCanCallSetSubnodeOwner(parentNode, node);
-        _checkFusesAreSettable(node, fuses);
+
+        _canCallSetSubnodeOwner(parentNode, node);
+        _fusesAreSettable(node, fuses);
         bytes memory name = _saveLabel(parentNode, node, label);
         expiry = _checkParentFusesAndExpiry(parentNode, node, fuses, expiry);
 
         if (!_isWrapped(node)) {
-            revert NameIsNotWrapped();
+            ens.setSubnodeRecord(
+                parentNode,
+                labelhash,
+                address(this),
+                resolver,
+                ttl
+            );
+            _wrap(node, name, owner, fuses, expiry);
+        } else {
+            ens.setSubnodeRecord(
+                parentNode,
+                labelhash,
+                address(this),
+                resolver,
+                ttl
+            );
+            _updateName(parentNode, node, label, owner, fuses, expiry);
         }
-
-        ens.setSubnodeRecord(
-            parentNode,
-            labelhash,
-            address(this),
-            resolver,
-            ttl
-        );
 
         // Add an approved address
         if (approved != address(0)) {
             super._approve(approved, uint256(node));
         }
-
-        _wrap(node, name, owner, fuses, expiry);
     }
 
     /**
@@ -643,37 +653,36 @@ contract L2NameWrapper is
      *      replacing a subdomain. If either conditions are true, then it is possible to call
      *      setSubnodeOwner
      * @param parentNode Namehash of the parent name to check
-     * @param subnode Namehash of the subname to check
+     * @param node Namehash of the subname to check
      */
 
-    function _checkCanCallSetSubnodeOwner(
+    function _canCallSetSubnodeOwner(
         bytes32 parentNode,
-        bytes32 subnode
+        bytes32 node
     ) internal view {
         (
-            address subnodeOwner,
-            uint32 subnodeFuses,
-            uint64 subnodeExpiry
-        ) = getData(uint256(subnode));
+            address nodeOwner,
+            uint32 nodeFuses,
+            uint64 nodeExpiry
+        ) = getData(uint256(node));
 
-        // check if the registry owner is 0 and expired
         // check if the wrapper owner is 0 and expired
         // If either, then check parent fuses for CANNOT_CREATE_SUBDOMAIN
-        bool expired = subnodeExpiry < block.timestamp;
+        bool expired = nodeExpiry < block.timestamp;
         if (
             expired &&
             // protects a name that has been unwrapped with PCC and doesn't allow the parent to take control by recreating it if unexpired
-            (subnodeOwner == address(0) ||
+            (nodeOwner == address(0) ||
                 // protects a name that has been burnt and doesn't allow the parent to take control by recreating it if unexpired
-                ens.owner(subnode) == address(0))
+                ens.owner(node) == address(0))
         ) {
             (, uint32 parentFuses, ) = getData(uint256(parentNode));
             if (parentFuses & CANNOT_CREATE_SUBDOMAIN != 0) {
-                revert OperationProhibited(subnode);
+                revert OperationProhibited(node);
             }
         } else {
-            if (subnodeFuses & PARENT_CANNOT_CONTROL != 0) {
-                revert OperationProhibited(subnode);
+            if (nodeFuses & PARENT_CANNOT_CONTROL != 0) {
+                revert OperationProhibited(node);
             }
         }
     }
@@ -887,7 +896,7 @@ contract L2NameWrapper is
             node,
             name,
             wrappedOwner,
-            fuses | PARENT_CANNOT_CONTROL | IS_DOT_ETH,
+            fuses | CANNOT_UNWRAP | PARENT_CANNOT_CONTROL | IS_DOT_ETH,
             expiry
         );
 
@@ -948,7 +957,7 @@ contract L2NameWrapper is
         }
     }
 
-    function _checkFusesAreSettable(bytes32 node, uint32 fuses) internal pure {
+    function _fusesAreSettable(bytes32 node, uint32 fuses) internal pure {
         if (fuses | USER_SETTABLE_FUSES != USER_SETTABLE_FUSES) {
             // Cannot directly burn other non-user settable fuses
             revert OperationProhibited(node);
@@ -957,8 +966,8 @@ contract L2NameWrapper is
 
     function _isWrapped(bytes32 node) internal view returns (bool) {
         return
-            ownerOf(uint256(node)) != address(0) &&
-            ens.owner(node) == address(this);
+            ownerOf(uint256(node)) != address(0); //&& @audit - removed checking the registry since names are always wrapped.  
+            //ens.owner(node) == address(this);
     }
 
     function _isETH2LDInGracePeriod(
