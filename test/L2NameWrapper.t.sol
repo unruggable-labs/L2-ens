@@ -18,7 +18,6 @@ import {IERC1155MetadataURI} from "openzeppelin-contracts/contracts/token/ERC115
 import {GasHelpers} from "./GasHelpers.sol";
 import {IERC165} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import {IERC1155Receiver} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
-import {ReverseRegistrar} from "ens-contracts/reverseRegistrar/ReverseRegistrar.sol";
 import {ERC20PresetFixedSupply} from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 error NameMustBeWrappedInNameWrapper();
@@ -68,7 +67,6 @@ contract L2NameWrapperTest is Test, GasHelpers {
     address customResolver = 0x0000000000000000000000000000000000000007;
 
     ENSRegistry ens; 
-    ReverseRegistrar reverseRegistrar;
     StaticMetadataService staticMetadataService;
     L2NameWrapper nameWrapper;
 
@@ -83,13 +81,6 @@ contract L2NameWrapperTest is Test, GasHelpers {
 
         // Deploy the ENS registry.
         ens = new ENSRegistry(); 
-
-        // Deploy a reverse registrar.
-        reverseRegistrar = new ReverseRegistrar(ens);
-        // Set the reverse registrar as the owner of the reverse node.
-        ens.setSubnodeOwner(ROOT_NODE, keccak256("reverse"), account);
-        ens.setSubnodeOwner(bytes("\x07reverse\x00").namehash(0), keccak256("addr"), address(reverseRegistrar));
-
 
         // Deploy a metadata service.
         staticMetadataService = new StaticMetadataService("testURI");

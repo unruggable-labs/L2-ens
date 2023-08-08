@@ -8,7 +8,6 @@ import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
 import {IReverseRegistrar} from "ens-contracts/reverseRegistrar/IReverseRegistrar.sol";
-import {ReverseClaimer} from "ens-contracts/reverseRegistrar/ReverseClaimer.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
@@ -33,8 +32,7 @@ contract L2NameWrapper is
     ERC1155Fuse,
     IL2NameWrapper,
     Controllable,
-    ERC20Recoverable,
-    ReverseClaimer
+    ERC20Recoverable
 {
     using BytesUtils for bytes;
 
@@ -56,7 +54,7 @@ contract L2NameWrapper is
     constructor(
         ENS _ens,
         IMetadataService _metadataService
-    ) ReverseClaimer(_ens, msg.sender) {
+    ) {
         ens = _ens;
         metadataService = _metadataService;
 

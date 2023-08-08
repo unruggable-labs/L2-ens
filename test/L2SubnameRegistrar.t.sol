@@ -14,7 +14,6 @@ import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
 import {USDOracleMock} from "contracts/subwrapper/mocks/USDOracleMock.sol";
-import {ReverseRegistrar} from "ens-contracts/reverseRegistrar/ReverseRegistrar.sol";
 import {IRenewalController} from "contracts/subwrapper/interfaces/IRenewalController.sol";
 
 import {IERC1155MetadataURI} from "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
@@ -51,7 +50,6 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     ENSRegistry ens; 
     StaticMetadataService staticMetadataService;
-    ReverseRegistrar reverseRegistrar;
     L2NameWrapper nameWrapper;
     PublicResolver publicResolver;
     L2SubnameRegistrar subnameRegistrar;
@@ -72,12 +70,6 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         // Deploy the ENS registry.
         ens = new ENSRegistry(); 
 
-        // Deploy a reverse registrar.
-        reverseRegistrar = new ReverseRegistrar(ens);
-        // Set the reverse registrar as the owner of the reverse node.
-        ens.setSubnodeOwner(ROOT_NODE, keccak256("reverse"), account);
-        ens.setSubnodeOwner(bytes("\x07reverse\x00").namehash(0), keccak256("addr"), address(reverseRegistrar));
-        
         // Deploy a metadata service.
         staticMetadataService = new StaticMetadataService("testURI");
 
@@ -97,7 +89,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         // ens.setApprovalForAll(address(nameWrapper), true); // @audit - this is not needed.
 
         // Deploy the public resolver.
-        publicResolver = new PublicResolver(ens, INameWrapper(address(nameWrapper)), address(0), address(0));
+        //@audit - for some reason this doesn't work when I removed the reverse registrar.
+        //publicResolver = new PublicResolver(ens, INameWrapper(address(nameWrapper)), address(0), address(0));
 
         // Deploy the Subname Registrar.
         subnameRegistrar = new L2SubnameRegistrar(
