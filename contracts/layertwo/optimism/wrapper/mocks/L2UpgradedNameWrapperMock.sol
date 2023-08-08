@@ -4,6 +4,8 @@ import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol
 import {ENS} from "ens-contracts/registry/ENS.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
 
+import "forge-std/Test.sol";
+
 contract L2UpgradedNameWrapperMock is INameWrapperUpgrade {
     using BytesUtils for bytes;
 
@@ -17,9 +19,9 @@ contract L2UpgradedNameWrapperMock is INameWrapperUpgrade {
     }
 
     event NameUpgraded(
-        bytes name,
-        address wrappedOwner,
-        uint32 fuses,
+        bytes indexed name,
+        address indexed wrappedOwner,
+        uint32 indexed fuses,
         uint64 expiry,
         address approved,
         bytes extraData
