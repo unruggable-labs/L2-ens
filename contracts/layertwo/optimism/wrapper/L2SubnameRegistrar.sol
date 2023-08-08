@@ -3,16 +3,15 @@ pragma solidity ^0.8.17;
 
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
 import {ISubnameRegistrar} from "contracts/subwrapper/interfaces/ISubnameRegistrar.sol";
-import {ISubnameWrapper} from "contracts/subwrapper/interfaces/ISubnameWrapper.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
-import {INameWrapper, CANNOT_UNWRAP, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "ens-contracts/wrapper/INameWrapper.sol";
+import {IL2NameWrapper, CANNOT_UNWRAP, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
-import {BytesUtilsSub} from "./BytesUtilsSub.sol";
+import {BytesUtilsSub} from "contracts/subwrapper/BytesUtilsSub.sol";
 import {IAggregatorInterface} from "contracts/subwrapper/interfaces/IAggregatorInterface.sol";
-import {Balances} from "./Balances.sol";
+import {Balances} from "contracts/subwrapper/Balances.sol";
 import {IRenewalController} from "contracts/subwrapper/interfaces/IRenewalController.sol";
 
 error CommitmentTooNew(bytes32 commitment);
@@ -33,7 +32,7 @@ error InvalidDuration(uint256 duration);
 /**
  * @dev A registrar controller for registering and renewing names at fixed cost.
  */
-contract SubnameRegistrar is
+contract L2SubnameRegistrar is
     Ownable,
     ISubnameRegistrar,
     ERC165,
@@ -51,8 +50,7 @@ contract SubnameRegistrar is
     uint64 private constant MAX_EXPIRY = type(uint64).max;
     uint256 public immutable minCommitmentAge;
     uint256 public immutable maxCommitmentAge;
-    INameWrapper public immutable nameWrapper;
-    ISubnameWrapper public immutable subnameWrapper;
+    IL2NameWrapper public immutable nameWrapper;
     ENS public immutable ens;
 
     // Chainlink oracle address
@@ -85,8 +83,7 @@ contract SubnameRegistrar is
         uint256 _minCommitmentAge,
         uint256 _maxCommitmentAge,
         ENS _ens,
-        INameWrapper _nameWrapper,
-        ISubnameWrapper _subnameWrapper,
+        IL2NameWrapper _nameWrapper,
         IAggregatorInterface _usdOracle
     ) {
         if (_maxCommitmentAge <= _minCommitmentAge) {
@@ -101,9 +98,6 @@ contract SubnameRegistrar is
         maxCommitmentAge = _maxCommitmentAge;
         ens = _ens;
         nameWrapper = _nameWrapper;
-
-        // The contract that wraps the subnames.
-        subnameWrapper = _subnameWrapper;
 
         // Default cut is 2% (200/10000).
         ownerCut = 200;  
@@ -458,7 +452,6 @@ contract SubnameRegistrar is
             revert InvalidDuration(duration); 
         }
 
-        address parentOwner = nameWrapper.ownerOf(uint256(parentNode));
 
         // Create a block to solve a stack too deep error.
         {
@@ -476,7 +469,7 @@ contract SubnameRegistrar is
             revert NameNotAvailable(name);
         }
 
-        uint64 expires =  uint64(block.timestamp + duration);
+        uint64 expiry =  uint64(block.timestamp + duration);
 
         // Create a block to solve a stack too deep error.
         {
@@ -484,9 +477,9 @@ contract SubnameRegistrar is
             (,, uint64 maxExpiry) = nameWrapper.getData(uint256(parentNode));
 
             // Set the expiry to the max expiry if the duration is too long.
-            if (expires > maxExpiry) {
+            if (expiry > maxExpiry) {
                 duration = maxExpiry - block.timestamp;
-                expires = maxExpiry;
+                expiry = maxExpiry;
             }
         }
 
@@ -500,6 +493,9 @@ contract SubnameRegistrar is
 
         // Create a block to solve a stack too deep error.
         {
+
+            address parentOwner = nameWrapper.ownerOf(uint256(parentNode));
+
             // Calculate the amount to be given to the owner of the contract. 
             // We don't need a balance for the owner of the contract because the owner
             // can withdraw any funds in the contract minus total balances. 
@@ -534,21 +530,28 @@ contract SubnameRegistrar is
             )
         );
 
-        subnameWrapper.registerAndWrap(
-            name,
-            owner,
-            resolver,
-            fuses | CANNOT_UNWRAP | PARENT_CANNOT_CONTROL | CAN_EXTEND_EXPIRY,
-            expires,
-            pricingData[parentNode].renewalController
-        );
+        {
+            // Get the label from the _name. 
+            (string memory label, ) = name.getFirstLabel();
 
+            // Create the subname in the L2 Name Wrapper.
+            nameWrapper.setSubnodeRecord(
+                parentNode,
+                label,
+                owner,
+                address(pricingData[parentNode].renewalController), 
+                resolver,
+                0, // TTL
+                fuses | CANNOT_UNWRAP | PARENT_CANNOT_CONTROL,
+                expiry
+            );
+        }
         emit SubnameRegistered(
             name,
             node,
             owner,
             price,
-            expires
+            expiry
         );
 
         // Because the oracle can return a slightly different value then what was estimated
