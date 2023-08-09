@@ -1,24 +1,23 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.17 <0.9.0;
 
-import "../registry/ENS.sol";
-import "./profiles/ABIResolver.sol";
-import "./profiles/AddrResolver.sol";
-import "./profiles/ContentHashResolver.sol";
-import "./profiles/DNSResolver.sol";
-import "./profiles/InterfaceResolver.sol";
-import "./profiles/NameResolver.sol";
-import "./profiles/PubkeyResolver.sol";
-import "./profiles/TextResolver.sol";
-import "./Multicallable.sol";
-import {ReverseClaimer} from "../reverseRegistrar/ReverseClaimer.sol";
-import {INameWrapper} from "../wrapper/INameWrapper.sol";
+import "ens-contracts/registry/ENS.sol";
+import "ens-contracts/resolvers/profiles/ABIResolver.sol";
+import "ens-contracts/resolvers/profiles/AddrResolver.sol";
+import "ens-contracts/resolvers/profiles/ContentHashResolver.sol";
+import "ens-contracts/resolvers/profiles/DNSResolver.sol";
+import "ens-contracts/resolvers/profiles/InterfaceResolver.sol";
+import "ens-contracts/resolvers/profiles/NameResolver.sol";
+import "ens-contracts/resolvers/profiles/PubkeyResolver.sol";
+import "ens-contracts/resolvers/profiles/TextResolver.sol";
+import "ens-contracts/resolvers/Multicallable.sol";
+import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 
 /**
  * A simple resolver anyone can use; only allows the owner of a node to set its
  * address.
  */
-contract PublicResolver is
+contract L2PublicResolver is
     Multicallable,
     ABIResolver,
     AddrResolver,
@@ -27,13 +26,11 @@ contract PublicResolver is
     InterfaceResolver,
     NameResolver,
     PubkeyResolver,
-    TextResolver,
-    ReverseClaimer
+    TextResolver 
 {
     ENS immutable ens;
-    INameWrapper immutable nameWrapper;
+    IL2NameWrapper immutable nameWrapper;
     address immutable trustedETHController;
-    address immutable trustedReverseRegistrar;
 
     /**
      * A mapping of operators. An address that is authorised for an address
@@ -69,16 +66,13 @@ contract PublicResolver is
 
     constructor(
         ENS _ens,
-        INameWrapper wrapperAddress,
-        address _trustedETHController,
-        address _trustedReverseRegistrar
-    ) ReverseClaimer(_ens, msg.sender) {
+        IL2NameWrapper wrapperAddress,
+        address _trustedETHController
+    ){
         ens = _ens;
         nameWrapper = wrapperAddress;
         trustedETHController = _trustedETHController;
-        trustedReverseRegistrar = _trustedReverseRegistrar;
     }
-
     /**
      * @dev See {IERC1155-setApprovalForAll}.
      */
@@ -124,10 +118,7 @@ contract PublicResolver is
     }
 
     function isAuthorised(bytes32 node) internal view override returns (bool) {
-        if (
-            msg.sender == trustedETHController ||
-            msg.sender == trustedReverseRegistrar
-        ) {
+        if (msg.sender == trustedETHController) {
             return true;
         }
         address owner = ens.owner(node);
@@ -160,4 +151,5 @@ contract PublicResolver is
     {
         return super.supportsInterface(interfaceID);
     }
+
 }
