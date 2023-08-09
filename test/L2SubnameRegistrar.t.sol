@@ -7,7 +7,7 @@ import {ISubnameRegistrar} from "contracts/subwrapper/interfaces/ISubnameRegistr
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
-import {PublicResolver} from "ens-contracts/resolvers/PublicResolver.sol";
+import {L2PublicResolver} from "optimism/resolvers/L2PublicResolver.sol";
 import {IL2NameWrapper, CANNOT_UNWRAP} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {INameWrapper} from "ens-contracts/wrapper/INameWrapper.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
@@ -51,7 +51,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
     ENSRegistry ens; 
     StaticMetadataService staticMetadataService;
     L2NameWrapper nameWrapper;
-    PublicResolver publicResolver;
+    L2PublicResolver publicResolver;
     L2SubnameRegistrar subnameRegistrar;
     USDOracleMock usdOracle;
 
@@ -90,7 +90,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         // Deploy the public resolver.
         //@audit - for some reason this doesn't work when I removed the reverse registrar.
-        //publicResolver = new PublicResolver(ens, INameWrapper(address(nameWrapper)), address(0), address(0));
+        publicResolver = new L2PublicResolver(ens, nameWrapper, address(0));
 
         // Deploy the Subname Registrar.
         subnameRegistrar = new L2SubnameRegistrar(
