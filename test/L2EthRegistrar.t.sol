@@ -7,7 +7,7 @@ import {IL2EthRegistrar} from "optimism/wrapper/interfaces/IL2EthRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
-import {PublicResolver} from "ens-contracts/resolvers/PublicResolver.sol";
+import {L2PublicResolver} from "optimism/resolvers/L2PublicResolver.sol";
 import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {INameWrapper, CANNOT_UNWRAP} from "ens-contracts/wrapper/INameWrapper.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
@@ -51,7 +51,7 @@ contract L2EthRegistrarTest is Test, GasHelpers {
     ENSRegistry ens; 
     StaticMetadataService staticMetadataService;
     L2NameWrapper nameWrapper;
-    PublicResolver publicResolver;
+    L2PublicResolver publicResolver;
     L2EthRegistrar ethRegistrar;
     USDOracleMock usdOracle;
 
@@ -90,7 +90,7 @@ contract L2EthRegistrarTest is Test, GasHelpers {
 
         // Deploy the public resolver.
         // @audit - for some reason this doesn't work, but we don't need it here. 
-        //publicResolver = new PublicResolver(ens, INameWrapper(address(nameWrapper)), address(0), address(0));
+        publicResolver = new L2PublicResolver(ens, nameWrapper, address(0));
 
         // Deploy the L2 Eth Registrar.
         ethRegistrar = new L2EthRegistrar(
