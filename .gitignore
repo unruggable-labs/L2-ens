@@ -1,0 +1,15 @@
+node_modules
+artifacts
+cache
+gasreport-*
+.env*
+*.DS_Store
+node_modules
+build
+forge-cache
+out
+lib/
+lib/ens-contracts
+broadcast/
+temp/
+.secret

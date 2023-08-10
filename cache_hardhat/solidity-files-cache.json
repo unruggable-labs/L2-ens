@@ -1,0 +1,3320 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/Balances.sol": {
+      "lastModificationDate": 1688485503979,
+      "contentHash": "f5c87f3ab29a53c0bf9ca7de4df30aca",
+      "sourceName": "contracts/Balances.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "openzeppelin-contracts/contracts/access/Ownable.sol",
+        "openzeppelin-contracts/contracts/utils/Address.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "Balances"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/access/Ownable.sol": {
+      "lastModificationDate": 1688485504312,
+      "contentHash": "5a20b2cad87ddb61c7a3a6af21289e28",
+      "sourceName": "lib/openzeppelin-contracts/contracts/access/Ownable.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "../utils/Context.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "Ownable"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/utils/Address.sol": {
+      "lastModificationDate": 1688485504343,
+      "contentHash": "211ffd288c1588ba8c10eae668ca3c66",
+      "sourceName": "lib/openzeppelin-contracts/contracts/utils/Address.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.1"
+      ],
+      "artifacts": [
+        "Address"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/utils/Context.sol": {
+      "lastModificationDate": 1686670389274,
+      "contentHash": "5f2c5c4b6af2dd4551027144797bc8be",
+      "sourceName": "lib/openzeppelin-contracts/contracts/utils/Context.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "Context"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/renewalControllers/PricePerCharRenewalController.sol": {
+      "lastModificationDate": 1688485503983,
+      "contentHash": "d1af13253e4660d91ac7e8e42cc67a8d",
+      "sourceName": "contracts/renewalControllers/PricePerCharRenewalController.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "forge-std/console.sol",
+        "ens-contracts/wrapper/INameWrapper.sol",
+        "ens-contracts/wrapper/INameWrapperUpgrade.sol",
+        "ens-contracts/ethregistrar/StringUtils.sol",
+        "contracts/interfaces/ISubnameWrapper.sol",
+        "contracts/interfaces/ISubnameWrapperUpgrade.sol",
+        "contracts/interfaces/IAggregatorInterface.sol",
+        "contracts/Balances.sol",
+        "contracts/BytesUtilsSub.sol",
+        "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol",
+        "contracts/interfaces/IRenewalController.sol",
+        "ens-contracts/utils/ERC20Recoverable.sol",
+        "contracts/interfaces/rCInterfaces/IPricePerCharRenewalController.sol",
+        "unruggable-protocol/contracts/Unruggable.sol",
+        "unruggable-protocol/contracts/ENSBookResolver.sol",
+        "contracts/RenewalControllerBase.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "PricePerCharRenewalController"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/ethregistrar/StringUtils.sol": {
+      "lastModificationDate": 1680881277306,
+      "contentHash": "83db412fc2c5fcd7e46710649f4dfc00",
+      "sourceName": "lib/ens-contracts/contracts/ethregistrar/StringUtils.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "StringUtils"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/forge-std/src/console.sol": {
+      "lastModificationDate": 1680881035744,
+      "contentHash": "100b8a33b917da1147740d7ab8b0ded3",
+      "sourceName": "lib/forge-std/src/console.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.22 <0.9.0"
+      ],
+      "artifacts": [
+        "console"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/utils/ERC20Recoverable.sol": {
+      "lastModificationDate": 1680881277324,
+      "contentHash": "7d1ac7c116331417073894c5b9ee88ff",
+      "sourceName": "lib/ens-contracts/contracts/utils/ERC20Recoverable.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol"
+      ],
+      "versionPragmas": [
+        ">=0.8.17 <0.9.0"
+      ],
+      "artifacts": [
+        "ERC20Recoverable"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/RenewalControllerBase.sol": {
+      "lastModificationDate": 1688485503980,
+      "contentHash": "50e87d653c0b21c98b41059a545183b0",
+      "sourceName": "contracts/RenewalControllerBase.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "forge-std/console.sol",
+        "ens-contracts/wrapper/INameWrapper.sol",
+        "ens-contracts/wrapper/INameWrapperUpgrade.sol",
+        "ens-contracts/ethregistrar/StringUtils.sol",
+        "contracts/interfaces/ISubnameWrapper.sol",
+        "contracts/interfaces/ISubnameWrapperUpgrade.sol",
+        "./Balances.sol",
+        "./BytesUtilsSub.sol",
+        "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol",
+        "contracts/interfaces/IRenewalController.sol",
+        "ens-contracts/utils/ERC20Recoverable.sol",
+        "unruggable-protocol/contracts/Unruggable.sol",
+        "unruggable-protocol/contracts/ENSBookResolver.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "RenewalControllerBase"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/interfaces/rCInterfaces/IPricePerCharRenewalController.sol": {
+      "lastModificationDate": 1688485503982,
+      "contentHash": "1ce4252e4ea6207d7c05609c94a13f0c",
+      "sourceName": "contracts/interfaces/rCInterfaces/IPricePerCharRenewalController.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "contracts/interfaces/IRenewalController.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "IPricePerCharRenewalController"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/interfaces/ISubnameWrapperUpgrade.sol": {
+      "lastModificationDate": 1686921151760,
+      "contentHash": "33c1346320512dabd6bcefc43ed772d2",
+      "sourceName": "contracts/interfaces/ISubnameWrapperUpgrade.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "./IRenewalController.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "ISubnameWrapperUpgrade"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/unruggable-protocol/contracts/Unruggable.sol": {
+      "lastModificationDate": 1688485977264,
+      "contentHash": "898620d79216663fce24d6d71332a441",
+      "sourceName": "lib/unruggable-protocol/contracts/Unruggable.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "./IUnruggable.sol",
+        "@openzeppelin/contracts/utils/introspection/ERC165.sol",
+        "@openzeppelin/contracts/access/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "Unruggable"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/wrapper/INameWrapper.sol": {
+      "lastModificationDate": 1680881277330,
+      "contentHash": "4221ca62232275df3ca728f641cc9c46",
+      "sourceName": "lib/ens-contracts/contracts/wrapper/INameWrapper.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "../registry/ENS.sol",
+        "../ethregistrar/IBaseRegistrar.sol",
+        "@openzeppelin/contracts/token/ERC1155/IERC1155.sol",
+        "./IMetadataService.sol",
+        "./INameWrapperUpgrade.sol"
+      ],
+      "versionPragmas": [
+        "~0.8.17"
+      ],
+      "artifacts": [
+        "INameWrapper"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/interfaces/IAggregatorInterface.sol": {
+      "lastModificationDate": 1688485503981,
+      "contentHash": "14989e6520e28b9a433eb92483c208d1",
+      "sourceName": "contracts/interfaces/IAggregatorInterface.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "IAggregatorInterface"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/interfaces/ISubnameWrapper.sol": {
+      "lastModificationDate": 1688485503982,
+      "contentHash": "87cbec76f9bcfb98837a7934ded1fedd",
+      "sourceName": "contracts/interfaces/ISubnameWrapper.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "ens-contracts/wrapper/INameWrapper.sol",
+        "./ISubnameWrapperUpgrade.sol",
+        "ens-contracts/registry/ENS.sol",
+        "ens-contracts/ethregistrar/IBaseRegistrar.sol",
+        "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol",
+        "ens-contracts/wrapper/IMetadataService.sol",
+        "./IRenewalController.sol",
+        "ens-contracts/resolvers/Resolver.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "ISubnameWrapper"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/BytesUtilsSub.sol": {
+      "lastModificationDate": 1688485503979,
+      "contentHash": "1d7f333ae4d2acf6d10f05ef7c8b71f2",
+      "sourceName": "contracts/BytesUtilsSub.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "BytesUtilsSub"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/unruggable-protocol/contracts/ENSBookResolver.sol": {
+      "lastModificationDate": 1688485984520,
+      "contentHash": "0a0c5dcc5d0f1c3f65fa15a601f636f4",
+      "sourceName": "lib/unruggable-protocol/contracts/ENSBookResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "./IExtendedResolver.sol",
+        "@openzeppelin/contracts/utils/Strings.sol",
+        "./IUnruggable.sol",
+        "@openzeppelin/contracts/utils/introspection/ERC165.sol",
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "./IENSBookResolver.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "ENSBookResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/utils/introspection/ERC165.sol": {
+      "lastModificationDate": 1686670389279,
+      "contentHash": "0e7db055ce108f9da7bb6686a00287c0",
+      "sourceName": "lib/openzeppelin-contracts/contracts/utils/introspection/ERC165.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "./IERC165.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ERC165"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/wrapper/INameWrapperUpgrade.sol": {
+      "lastModificationDate": 1680881277331,
+      "contentHash": "11b084a2c37ce20b4b2aa548776721f8",
+      "sourceName": "lib/ens-contracts/contracts/wrapper/INameWrapperUpgrade.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "~0.8.17"
+      ],
+      "artifacts": [
+        "INameWrapperUpgrade"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/interfaces/IRenewalController.sol": {
+      "lastModificationDate": 1688485503981,
+      "contentHash": "4e32096397d7c470a3c6fc8147b4d265",
+      "sourceName": "contracts/interfaces/IRenewalController.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "IRenewalController"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol": {
+      "lastModificationDate": 1688485504332,
+      "contentHash": "df36f7051335cd1e748b1b6463b7fdd3",
+      "sourceName": "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC20"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/wrapper/IMetadataService.sol": {
+      "lastModificationDate": 1680881277327,
+      "contentHash": "c4f9cc5e13f40eeb6884c379639b760a",
+      "sourceName": "lib/ens-contracts/contracts/wrapper/IMetadataService.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "~0.8.17"
+      ],
+      "artifacts": [
+        "IMetadataService"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/Resolver.sol": {
+      "lastModificationDate": 1680881277309,
+      "contentHash": "5714c29b34e7081d6ccd966e7e885a1b",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/Resolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/utils/introspection/IERC165.sol",
+        "./profiles/IABIResolver.sol",
+        "./profiles/IAddressResolver.sol",
+        "./profiles/IAddrResolver.sol",
+        "./profiles/IContentHashResolver.sol",
+        "./profiles/IDNSRecordResolver.sol",
+        "./profiles/IDNSZoneResolver.sol",
+        "./profiles/IInterfaceResolver.sol",
+        "./profiles/INameResolver.sol",
+        "./profiles/IPubkeyResolver.sol",
+        "./profiles/ITextResolver.sol",
+        "./profiles/IExtendedResolver.sol"
+      ],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "Resolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/registry/ENS.sol": {
+      "lastModificationDate": 1680881277307,
+      "contentHash": "d7f00c64cdab1ddb053002d600ee4ae7",
+      "sourceName": "lib/ens-contracts/contracts/registry/ENS.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "ENS"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/ethregistrar/IBaseRegistrar.sol": {
+      "lastModificationDate": 1680881277304,
+      "contentHash": "5d34ef923c86f6769bb7369d13d70f94",
+      "sourceName": "lib/ens-contracts/contracts/ethregistrar/IBaseRegistrar.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "../registry/ENS.sol",
+        "./IBaseRegistrar.sol",
+        "@openzeppelin/contracts/token/ERC721/IERC721.sol"
+      ],
+      "versionPragmas": [],
+      "artifacts": [
+        "IBaseRegistrar"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol": {
+      "lastModificationDate": 1688485504331,
+      "contentHash": "93aa9af4f5d2d2095a71ccde917038bb",
+      "sourceName": "lib/openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "../../utils/introspection/IERC165.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC1155"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/utils/introspection/IERC165.sol": {
+      "lastModificationDate": 1686670389281,
+      "contentHash": "03e6768535ac4da0e9756f1d8a4a018a",
+      "sourceName": "lib/openzeppelin-contracts/contracts/utils/introspection/IERC165.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC165"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/profiles/IABIResolver.sol": {
+      "lastModificationDate": 1680881277311,
+      "contentHash": "8aafef3ad6058617f5b719861e406a4d",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/profiles/IABIResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "IABIResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/profiles/IAddressResolver.sol": {
+      "lastModificationDate": 1680881277311,
+      "contentHash": "6f8242d10df510af914b58122a33d176",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/profiles/IAddressResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "IAddressResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/profiles/IAddrResolver.sol": {
+      "lastModificationDate": 1680881277311,
+      "contentHash": "3f1fad68ada48982f35ef7af2e8a245b",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/profiles/IAddrResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "IAddrResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/profiles/IContentHashResolver.sol": {
+      "lastModificationDate": 1680881277312,
+      "contentHash": "f9e7dc8b82306ecd1504ba9b10716631",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/profiles/IContentHashResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "IContentHashResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/profiles/IDNSRecordResolver.sol": {
+      "lastModificationDate": 1680881277313,
+      "contentHash": "c61d99362d86e11c143e9035d895a1da",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/profiles/IDNSRecordResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "IDNSRecordResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/profiles/IDNSZoneResolver.sol": {
+      "lastModificationDate": 1680881277314,
+      "contentHash": "4e7595256b231fed30f6c9945f1efa45",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/profiles/IDNSZoneResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "IDNSZoneResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/profiles/INameResolver.sol": {
+      "lastModificationDate": 1680881277315,
+      "contentHash": "3765ef37775da4202d0bc972a5e3a626",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/profiles/INameResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "INameResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/profiles/IInterfaceResolver.sol": {
+      "lastModificationDate": 1680881277315,
+      "contentHash": "a7500941f527de797e9d353be520ef1c",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/profiles/IInterfaceResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "IInterfaceResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/profiles/ITextResolver.sol": {
+      "lastModificationDate": 1680881277317,
+      "contentHash": "db2783ebbe0ddc0a8f69fd69795099c3",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/profiles/ITextResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "ITextResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/profiles/IExtendedResolver.sol": {
+      "lastModificationDate": 1680881277314,
+      "contentHash": "5fb946efa195615f0fbe2746a4e76ff6",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/profiles/IExtendedResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.4"
+      ],
+      "artifacts": [
+        "IExtendedResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/resolvers/profiles/IPubkeyResolver.sol": {
+      "lastModificationDate": 1680881277316,
+      "contentHash": "51e1427b16cc36011b47d224dd7a9292",
+      "sourceName": "lib/ens-contracts/contracts/resolvers/profiles/IPubkeyResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "IPubkeyResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/token/ERC721/IERC721.sol": {
+      "lastModificationDate": 1688485504338,
+      "contentHash": "48de4c9a3a4ae5ef66a2aa620843413f",
+      "sourceName": "lib/openzeppelin-contracts/contracts/token/ERC721/IERC721.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "../../utils/introspection/IERC165.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC721"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/unruggable-protocol/contracts/IUnruggable.sol": {
+      "lastModificationDate": 1688485979587,
+      "contentHash": "fee63d6f5203d9218a535d009d918a48",
+      "sourceName": "lib/unruggable-protocol/contracts/IUnruggable.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "IUnruggable"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/unruggable-protocol/contracts/IExtendedResolver.sol": {
+      "lastModificationDate": 1688485980813,
+      "contentHash": "cd315f3c851fa05bd5076deae7e8b012",
+      "sourceName": "lib/unruggable-protocol/contracts/IExtendedResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "IExtendedResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/unruggable-protocol/contracts/IENSBookResolver.sol": {
+      "lastModificationDate": 1688485982044,
+      "contentHash": "c8e8743b7ab682cfc62de0e3f80caffb",
+      "sourceName": "lib/unruggable-protocol/contracts/IENSBookResolver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "IENSBookResolver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/utils/Strings.sol": {
+      "lastModificationDate": 1688485504349,
+      "contentHash": "48686fc32a22a3754b8e63321857dd2a",
+      "sourceName": "lib/openzeppelin-contracts/contracts/utils/Strings.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "./math/Math.sol",
+        "./math/SignedMath.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "Strings"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/utils/math/SignedMath.sol": {
+      "lastModificationDate": 1686670389282,
+      "contentHash": "9488ebd4daacfee8ad04811600d7d061",
+      "sourceName": "lib/openzeppelin-contracts/contracts/utils/math/SignedMath.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "SignedMath"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/utils/math/Math.sol": {
+      "lastModificationDate": 1688485504353,
+      "contentHash": "fe63409d8a06818b926cf89e0ea88b1b",
+      "sourceName": "lib/openzeppelin-contracts/contracts/utils/math/Math.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "Math"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/renewalControllers/FixedPriceRenewalController.sol": {
+      "lastModificationDate": 1688487461697,
+      "contentHash": "7508db5c1f1dea687ca77ac8c87d7bc8",
+      "sourceName": "contracts/renewalControllers/FixedPriceRenewalController.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "forge-std/console.sol",
+        "ens-contracts/wrapper/INameWrapper.sol",
+        "ens-contracts/wrapper/INameWrapperUpgrade.sol",
+        "ens-contracts/ethregistrar/StringUtils.sol",
+        "contracts/interfaces/ISubnameWrapper.sol",
+        "contracts/interfaces/ISubnameWrapperUpgrade.sol",
+        "contracts/interfaces/IAggregatorInterface.sol",
+        "contracts/Balances.sol",
+        "contracts/BytesUtilsSub.sol",
+        "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol",
+        "contracts/interfaces/IRenewalController.sol",
+        "ens-contracts/utils/ERC20Recoverable.sol",
+        "contracts/interfaces/rCInterfaces/IFixedPriceRenewalController.sol",
+        "unruggable-protocol/contracts/Unruggable.sol",
+        "unruggable-protocol/contracts/ENSBookResolver.sol",
+        "contracts/RenewalControllerBase.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "FixedPriceRenewalController"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/interfaces/rCInterfaces/IFixedPriceRenewalController.sol": {
+      "lastModificationDate": 1688485503982,
+      "contentHash": "9e02b0d700d02aa2747402ae900e2a36",
+      "sourceName": "contracts/interfaces/rCInterfaces/IFixedPriceRenewalController.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "contracts/interfaces/IRenewalController.sol",
+        "contracts/interfaces/IAggregatorInterface.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "IFixedPriceRenewalController"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/mocks/SubnameWrapperUpgraded.sol": {
+      "lastModificationDate": 1688485503982,
+      "contentHash": "36db24b5130f0f05eef68739aa592c76",
+      "sourceName": "contracts/mocks/SubnameWrapperUpgraded.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "forge-std/console.sol",
+        "../ERC1155FuseSub.sol",
+        "ens-contracts/wrapper/Controllable.sol",
+        "contracts/interfaces/ISubnameWrapper.sol",
+        "ens-contracts/wrapper/INameWrapper.sol",
+        "contracts/interfaces/ISubnameWrapperUpgrade.sol",
+        "ens-contracts/wrapper/IMetadataService.sol",
+        "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol",
+        "ens-contracts/registry/ENS.sol",
+        "ens-contracts/resolvers/Resolver.sol",
+        "openzeppelin-contracts/contracts/access/Ownable.sol",
+        "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol",
+        "../BytesUtilsSub.sol",
+        "ens-contracts/utils/ERC20Recoverable.sol",
+        "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol",
+        "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol",
+        "contracts/interfaces/IRenewalController.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "SubnameWrapperUpgraded"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol": {
+      "lastModificationDate": 1686670389254,
+      "contentHash": "9148c2e10c4efb12c71a7f080da5559b",
+      "sourceName": "lib/openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "../IERC1155.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC1155MetadataURI"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/ens-contracts/contracts/wrapper/Controllable.sol": {
+      "lastModificationDate": 1680881277327,
+      "contentHash": "dcd3342565efed1aa2f1f8d3f20183bd",
+      "sourceName": "lib/ens-contracts/contracts/wrapper/Controllable.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "~0.8.17"
+      ],
+      "artifacts": [
+        "Controllable"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/ERC1155FuseSub.sol": {
+      "lastModificationDate": 1688485503979,
+      "contentHash": "ac2b68740a0ecb2ca8f4471150e11af1",
+      "sourceName": "contracts/ERC1155FuseSub.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol",
+        "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol",
+        "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol",
+        "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol",
+        "openzeppelin-contracts/contracts/utils/Address.sol",
+        "contracts/interfaces/IRenewalController.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "ERC1155FuseSub"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/lib/openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol": {
+      "lastModificationDate": 1686670389252,
+      "contentHash": "9f8822b72fe2702979e40160cb6d9636",
+      "sourceName": "lib/openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "../../utils/introspection/IERC165.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC1155Receiver"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/SubnameRegistrar.sol": {
+      "lastModificationDate": 1688651065749,
+      "contentHash": "30f6932fad47ff0c1c0073dbed42b6d5",
+      "sourceName": "contracts/SubnameRegistrar.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "forge-std/console.sol",
+        "ens-contracts/ethregistrar/StringUtils.sol",
+        "contracts/interfaces/ISubnameRegistrar.sol",
+        "contracts/interfaces/ISubnameWrapper.sol",
+        "ens-contracts/registry/ENS.sol",
+        "openzeppelin-contracts/contracts/access/Ownable.sol",
+        "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol",
+        "openzeppelin-contracts/contracts/utils/Address.sol",
+        "ens-contracts/wrapper/INameWrapper.sol",
+        "ens-contracts/utils/ERC20Recoverable.sol",
+        "./BytesUtilsSub.sol",
+        "contracts/interfaces/IAggregatorInterface.sol",
+        "./Balances.sol",
+        "contracts/interfaces/IRenewalController.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "SubnameRegistrar"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/interfaces/ISubnameRegistrar.sol": {
+      "lastModificationDate": 1688651136025,
+      "contentHash": "b731091c83329dfd9d57f8e2b448fa87",
+      "sourceName": "contracts/interfaces/ISubnameRegistrar.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "./IRenewalController.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "ISubnameRegistrar"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/SubnameWrapper.sol": {
+      "lastModificationDate": 1688485503980,
+      "contentHash": "a65274e88835c50c2464c5734b4fd11e",
+      "sourceName": "contracts/SubnameWrapper.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "forge-std/console.sol",
+        "./ERC1155FuseSub.sol",
+        "ens-contracts/wrapper/Controllable.sol",
+        "contracts/interfaces/ISubnameWrapper.sol",
+        "ens-contracts/wrapper/INameWrapper.sol",
+        "contracts/interfaces/ISubnameWrapperUpgrade.sol",
+        "ens-contracts/wrapper/IMetadataService.sol",
+        "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol",
+        "ens-contracts/registry/ENS.sol",
+        "ens-contracts/resolvers/Resolver.sol",
+        "openzeppelin-contracts/contracts/access/Ownable.sol",
+        "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol",
+        "./BytesUtilsSub.sol",
+        "ens-contracts/utils/ERC20Recoverable.sol",
+        "contracts/interfaces/IRenewalController.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "SubnameWrapper"
+      ]
+    },
+    "/Users/thomasclowes/Development/SubnameWrapper/contracts/mocks/USDOracleMock.sol": {
+      "lastModificationDate": 1688485503983,
+      "contentHash": "42b0a2b794644a285fe7c7a81135f0fe",
+      "sourceName": "contracts/mocks/USDOracleMock.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          },
+          "remappings": [
+            "@ensdomains/buffer/=lib/buffer/",
+            "@openzeppelin/=lib/openzeppelin-contracts/",
+            "XAP/=lib/XAP/contracts/",
+            "buffer/=lib/buffer/contracts/",
+            "ds-test/=lib/forge-std/lib/ds-test/src/",
+            "ens-contracts/=lib/ens-contracts/contracts/",
+            "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+            "forge-std/=lib/forge-std/src/",
+            "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+            "openzeppelin/=lib/openzeppelin-contracts/contracts/",
+            "unruggable-protocol/=lib/unruggable-protocol/",
+            "xap-contracts/=lib/xap/contracts/"
+          ]
+        }
+      },
+      "imports": [
+        "contracts/interfaces/IAggregatorInterface.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "USDOracleMock"
+      ]
+    }
+  }
+}
