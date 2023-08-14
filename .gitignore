@@ -8,8 +8,7 @@ node_modules
 build
 forge-cache
 out
-lib/
-lib/ens-contracts
+lib/*
 broadcast/
 temp/
 .secret
