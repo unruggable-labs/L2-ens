@@ -10,7 +10,7 @@ import {IFixedPriceRenewalController} from "optimism/wrapper/interfaces/rCInterf
 import {L2RenewalControllerBase} from "optimism/wrapper/L2RenewalControllerBase.sol";
 
 
-contract FixedPriceRenewalController is
+contract L2FixedPriceRenewalController is
     L2RenewalControllerBase,
     IFixedPriceRenewalController
     {

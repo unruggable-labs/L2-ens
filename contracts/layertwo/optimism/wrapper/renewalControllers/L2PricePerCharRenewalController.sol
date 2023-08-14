@@ -11,7 +11,7 @@ import {L2RenewalControllerBase} from "optimism/wrapper/L2RenewalControllerBase.
 
 error CannotSetNewCharLengthAmount();
 
-contract PricePerCharRenewalController is 
+contract L2PricePerCharRenewalController is 
     L2RenewalControllerBase,
     IPricePerCharRenewalController
     {
