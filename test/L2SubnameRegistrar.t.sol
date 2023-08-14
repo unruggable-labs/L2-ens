@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import {L2SubnameRegistrar, UnauthorizedAddress} from "optimism/wrapper/L2SubnameRegistrar.sol";
-import {ISubnameRegistrar} from "contracts/subwrapper/interfaces/ISubnameRegistrar.sol";
+import {ISubnameRegistrar} from "optimism/wrapper/interfaces/ISubnameRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
@@ -13,8 +13,8 @@ import {INameWrapper} from "ens-contracts/wrapper/INameWrapper.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
-import {USDOracleMock} from "contracts/subwrapper/mocks/USDOracleMock.sol";
-import {IRenewalController} from "contracts/subwrapper/interfaces/IRenewalController.sol";
+import {USDOracleMock} from "optimism/wrapper/mocks/USDOracleMock.sol";
+import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
 
 import {IERC1155MetadataURI} from "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
 import {GasHelpers} from "./GasHelpers.sol";

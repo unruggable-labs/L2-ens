@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {BytesUtilsSub} from "contracts/subwrapper/BytesUtilsSub.sol";
+import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
 
 contract BytesUtilsSubTests is Test {
 

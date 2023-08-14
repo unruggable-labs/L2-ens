@@ -11,7 +11,7 @@ import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
-import {IRenewalController} from "contracts/subwrapper/interfaces/IRenewalController.sol";
+import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
 
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 import {IERC1155MetadataURI} from "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";

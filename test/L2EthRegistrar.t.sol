@@ -13,8 +13,8 @@ import {INameWrapper, CANNOT_UNWRAP} from "ens-contracts/wrapper/INameWrapper.so
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
-import {USDOracleMock} from "contracts/subwrapper/mocks/USDOracleMock.sol";
-import {IRenewalController} from "contracts/subwrapper/interfaces/IRenewalController.sol";
+import {USDOracleMock} from "optimism/wrapper/mocks/USDOracleMock.sol";
+import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
 
 import {IERC1155MetadataURI} from "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
 import {GasHelpers} from "./GasHelpers.sol";

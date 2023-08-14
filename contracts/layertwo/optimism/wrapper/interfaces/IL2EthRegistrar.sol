@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {IRenewalController} from "contracts/subwrapper/interfaces/IRenewalController.sol";
+import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
 
 /**
  * @title Interface for a registrar for registering subnames.

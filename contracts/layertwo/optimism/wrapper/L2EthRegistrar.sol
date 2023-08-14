@@ -9,10 +9,10 @@ import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC16
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
 import {IL2NameWrapper, CANNOT_UNWRAP, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
-import {BytesUtilsSub} from "contracts/subwrapper/BytesUtilsSub.sol";
-import {IAggregatorInterface} from "contracts/subwrapper/interfaces/IAggregatorInterface.sol";
-import {Balances} from "contracts/subwrapper/Balances.sol";
-import {IRenewalController} from "contracts/subwrapper/interfaces/IRenewalController.sol";
+import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
+import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
+import {Balances} from "optimism/wrapper/Balances.sol";
+import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
 
 error CommitmentTooNew(bytes32 commitment);
 error CommitmentTooOld(bytes32 commitment);
