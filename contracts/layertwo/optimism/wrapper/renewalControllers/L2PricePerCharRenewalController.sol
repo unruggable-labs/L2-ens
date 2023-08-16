@@ -23,7 +23,7 @@ contract L2PricePerCharRenewalController is
     uint256[] public charAmounts;
 
     // Chainlink oracle address
-    IAggregatorInterface public immutable usdOracle; //@audit - is there any way to update the oracle? 
+    IAggregatorInterface public usdOracle; //@audit - is there any way to update the oracle? 
 
     constructor(
         INameWrapper _nameWrapper,
@@ -35,6 +35,16 @@ contract L2PricePerCharRenewalController is
 
         // Set charAmounts to a new array with a length of 1.
         charAmounts = new uint256[](1);
+    }
+    /**
+     * @notice Sets the oracle address.
+     * @param _usdOracle The oracle address.
+     */
+
+    function updateOracle(IAggregatorInterface _usdOracle) public onlyOwner {
+
+        // Set the oracle address.
+        usdOracle = _usdOracle;
     }
 
     /**
