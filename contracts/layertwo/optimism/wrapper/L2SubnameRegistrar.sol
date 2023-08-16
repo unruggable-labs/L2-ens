@@ -111,13 +111,14 @@ contract L2SubnameRegistrar is
      * @notice Gets the total cost of rent in wei, from the unitPrice, i.e. USD, and duration.
      * @param name The name in DNS format, e.g. vault.vitalik.eth
      * @param duration The amount of time the name will be rented for/extended in years. 
-     * @return The rent price for the duration in Wei and USD. 
+     * @return weiPrice The rent price for the duration in Wei 
+     * @return usdPrice The rent price for the duration in USD 
      */
 
     function rentPrice(bytes calldata name, uint256 duration)
         public
         view
-        returns (uint256, uint256) // (uint256 weiPrice, uint256 usdPrice) 
+        returns (uint256 weiPrice, uint256 usdPrice) 
     {
 
         ( , uint256 labelLength) = name.getFirstLabel();

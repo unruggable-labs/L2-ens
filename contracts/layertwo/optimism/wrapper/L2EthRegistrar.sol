@@ -97,13 +97,14 @@ contract L2EthRegistrar is
     /**
      * @notice Gets the total cost of rent in wei, from the unitPrice, i.e. USD, and duration.
      * @param duration The amount of time the name will be rented for/extended in years. 
-     * @return The rent price for the duration in Wei and USD. 
+     * @return weiPrice The rent price for the duration in Wei 
+     * @return usdPrice The rent price for the duration in USD 
      */
 
     function rentPrice(bytes memory name, uint256 duration)
         public
         view
-        returns (uint256, uint256) // (uint256 weiPrice, uint256 usdPrice) 
+        returns (uint256 weiPrice, uint256 usdPrice) 
     {
 
         ( , uint256 labelLength) = name.getFirstLabel();
