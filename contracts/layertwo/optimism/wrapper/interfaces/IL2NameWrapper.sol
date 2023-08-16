@@ -53,14 +53,14 @@ interface IL2NameWrapper is IERC1155 {
         string calldata label,
         address wrappedOwner,
         address approved,
-        uint64 duration,
+        uint256 duration,
         address resolver,
         uint16 ownerControlledFuses
     ) external returns (uint64 expiry);
 
     function renewEth2LD(
         bytes32 labelhash,
-        uint64 duration
+        uint256 duration
     ) external returns (uint64 expiry);
 
     function setFuses(
