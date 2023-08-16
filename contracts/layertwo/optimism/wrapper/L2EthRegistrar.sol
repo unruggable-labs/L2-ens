@@ -47,7 +47,6 @@ contract L2EthRegistrar is
     using BytesUtilsSub for bytes;
 
     uint64 private constant GRACE_PERIOD = 90 days;
-    uint256 public constant MIN_REGISTRATION_DURATION = 28 days;
     bytes32 private constant ETH_NODE =
         0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
     uint64 private constant MAX_EXPIRY = type(uint64).max;
@@ -557,7 +556,7 @@ contract L2EthRegistrar is
 
         delete (commitments[commitment]);
 
-        if (duration < MIN_REGISTRATION_DURATION) {
+        if (duration < minRegistrationDuration) {
             revert DurationTooShort(duration);
         }
     }
