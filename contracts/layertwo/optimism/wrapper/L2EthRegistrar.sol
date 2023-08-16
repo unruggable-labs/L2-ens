@@ -388,7 +388,7 @@ contract L2EthRegistrar is
             label, 
             owner,
             address(0), // no approved account
-            expires,
+            duration,
             resolver,
             fuses
         );
