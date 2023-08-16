@@ -443,11 +443,8 @@ contract L2EthRegistrar is
             revert UnauthorizedAddress(node);
         }
 
-        uint64 expiry;
-
         // Create a block to solve a stack too deep error.
         {
-            // Get the previous expiry. 
             (,, uint64 nodeExpiry) = nameWrapper.getData(uint256(node));
 
             // Check to see if the duration is too long and
@@ -456,9 +453,6 @@ contract L2EthRegistrar is
             if (nodeExpiry + duration > parentExpiry) {
                 duration = parentExpiry - nodeExpiry;
             }
-
-            // Set the expiry
-            expiry =  uint64(nodeExpiry + duration);
         }
 
         // Get the price for the duration.
@@ -485,13 +479,12 @@ contract L2EthRegistrar is
             totalBalance += referrerAmount;
         }
 
-        nameWrapper.extendExpiry(
-            ETH_NODE,
+        nameWrapper.renewEth2LD(
             labelhash,
-            expiry
+            duration
         );
 
-        emit NameRenewed(label, priceEth, expiry);
+        emit EthNameRenewed(label, priceEth, duration);
 
         // If the caller paid too much refund the amount overpaid. 
         if (msg.value > priceEth) {

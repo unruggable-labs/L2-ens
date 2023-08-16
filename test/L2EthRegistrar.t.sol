@@ -557,4 +557,26 @@ contract L2EthRegistrarTest is Test, GasHelpers {
 
     }
 
+    function test_016____renew_______________________RenewADotEth2LD() public{
+
+        bytes32 node = registerAndWrap(account2);
+
+        //get the previous expiry. 
+        (,, uint64 prevExpiry) = nameWrapper.getData(uint256(node));
+
+        // Renew the name for one year. Overpay with 1 Eth  
+        ethRegistrar.renew{value: 1000000000000000000}(
+            "abc",
+            accountReferrer, 
+            oneYear
+        );
+
+        // get the data for the name
+        (, , uint64 expiry) = nameWrapper.getData(uint256(node));
+
+        // Make sure the name is renewed for one more year.
+        assertEq(expiry, uint64(prevExpiry + oneYear));
+
+    }
+
 }
