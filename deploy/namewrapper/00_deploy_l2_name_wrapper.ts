@@ -45,15 +45,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         
         console.log(`Deployed L2NameWrapper to ${tx.address}`);
     }
-
-    const root = await ethers.getContract('Root')
-
-    const setEthOwnerTx = await root
-      .setSubnodeOwner('0x' + keccak256('eth'), tx.address)
-    console.log(
-      `Setting owner of ETH node to L2NameWrapper on root (tx: ${setEthOwnerTx.hash})...`,
-    )
-
 }
 
 func.tags         = ['name-wrapper']
