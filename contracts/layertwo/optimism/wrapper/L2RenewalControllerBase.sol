@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import {INameWrapper} from "ens-contracts/wrapper/INameWrapper.sol";
 import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
-import {Balances} from "./Balances.sol";
+import {Balances} from "optimism/wrapper/Balances.sol";
 import {BytesUtilsSub} from "./BytesUtilsSub.sol";
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
