@@ -264,7 +264,7 @@ contract L2NameWrapper is
         string calldata label,
         address wrappedOwner,
         address approved,
-        uint64 duration,
+        uint256 duration,
         address resolver,
         uint16 ownerControlledFuses
     ) external onlyController returns (uint64 expiry) {
@@ -275,7 +275,7 @@ contract L2NameWrapper is
 
         ens.setSubnodeRecord(ETH_NODE, labelhash, address(this), address(0), 0);
 
-        expiry = uint64(block.timestamp) + duration + GRACE_PERIOD;
+        expiry = uint64(block.timestamp) + uint64(duration) + GRACE_PERIOD;
 
         _wrapETH2LD(
             label,
@@ -297,7 +297,7 @@ contract L2NameWrapper is
 
     function renewEth2LD(
         bytes32 labelhash,
-        uint64 duration
+        uint256 duration
     ) external onlyController returns (uint64 expiry) {
         bytes32 node = _makeNode(ETH_NODE, labelhash);
 
@@ -309,7 +309,7 @@ contract L2NameWrapper is
         (address owner, uint32 fuses, uint64 oldExpiry) = getData(uint256(node));
 
         // Set expiry in Wrapper
-        uint64 expiry = oldExpiry + duration;
+        expiry = uint64(oldExpiry + duration);
 
         _setData(node, owner, fuses, expiry);
 
