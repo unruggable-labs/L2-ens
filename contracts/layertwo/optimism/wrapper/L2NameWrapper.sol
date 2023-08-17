@@ -497,7 +497,14 @@ contract L2NameWrapper is
         _canCallSetSubnodeOwner(parentNode, node);
         _fusesAreSettable(node, fuses);
         bytes memory name = _saveLabel(parentNode, node, label);
-        expiry = _checkParentFusesAndExpiry(parentNode, node, fuses, expiry);
+
+        // Use a block to avoid stack too deep error.
+        {
+            (, , uint64 oldExpiry) = getData(uint256(node));
+            (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
+            _checkParentFuses(node, fuses, parentFuses);
+            expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
+        }
 
          if (!_isWrapped(node)) {
             ens.setSubnodeOwner(parentNode, labelhash, address(this));
@@ -541,7 +548,14 @@ contract L2NameWrapper is
         _canCallSetSubnodeOwner(parentNode, node);
         _fusesAreSettable(node, fuses);
         bytes memory name = _saveLabel(parentNode, node, label);
-        expiry = _checkParentFusesAndExpiry(parentNode, node, fuses, expiry);
+
+        // Use a block to avoid stack too deep error.
+        {
+            (, , uint64 oldExpiry) = getData(uint256(node));
+            (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
+            _checkParentFuses(node, fuses, parentFuses);
+            expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
+        }
 
         if (!_isWrapped(node)) {
             ens.setSubnodeRecord(
