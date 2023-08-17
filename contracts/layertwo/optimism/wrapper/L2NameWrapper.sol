@@ -843,30 +843,17 @@ contract L2NameWrapper is
         }
     }
 
-    // wrapper function for stack limit
-    function _checkParentFusesAndExpiry(
-        bytes32 parentNode,
-        bytes32 node,
-        uint32 fuses,
-        uint64 expiry
-    ) internal view returns (uint64) {
-        (, , uint64 oldExpiry) = getData(uint256(node));
-        (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
-        _checkParentFuses(node, fuses, parentFuses);
-        return _normaliseExpiry(expiry, oldExpiry, maxExpiry);
-    }
-
     function _checkParentFuses(
         bytes32 node,
         uint32 fuses,
         uint32 parentFuses
     ) internal pure {
-        bool isBurningParentControlledFuses = fuses & PARENT_CONTROLLED_FUSES !=
-            0;
 
-        bool parentHasNotBurnedCU = parentFuses & CANNOT_UNWRAP == 0;
+        // If we are burning parent controlled fuses
+        if (fuses & PARENT_CONTROLLED_FUSES != 0 && 
+            // and the parent has not burned CANNOT_UNWRAP
+            parentFuses & CANNOT_UNWRAP == 0) {
 
-        if (isBurningParentControlledFuses && parentHasNotBurnedCU) {
             revert OperationProhibited(node);
         }
     }
