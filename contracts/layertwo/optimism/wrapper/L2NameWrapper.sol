@@ -494,22 +494,35 @@ contract L2NameWrapper is
     ) public onlyTokenOwner(parentNode) returns (bytes32 node) {
         bytes32 labelhash = keccak256(bytes(label));
         node = _makeNode(parentNode, labelhash);
-        _canCallSetSubnodeOwner(parentNode, node);
+
+        // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
+        _canCallSetSubnode(parentNode, node);
+
+        // Checks to make sure the IS_DOT_ETH fuse is not burnt in the fuses. 
         _fusesAreSettable(node, fuses);
+
+        // If the name has not been set before, save the label.
         bytes memory name = _saveLabel(parentNode, node, label);
 
         // Use a block to avoid stack too deep error.
         {
             (, , uint64 oldExpiry) = getData(uint256(node));
             (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
+
+            // If we are burning parent controlled fuses make sure the parent has burned CANNOT_UNWRAP.
             _checkParentFuses(node, fuses, parentFuses);
+
+            // Make sure the expiry is between the old expiry and the parent expiry.
             expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
         }
 
+        // If the name is NOT wrapped, wrap it.
          if (!_isWrapped(node)) {
             ens.setSubnodeOwner(parentNode, labelhash, address(this));
             _wrap(node, name, owner, fuses, expiry);
         } else {
+
+            // The name is wrapped, so update it.
             _updateName(parentNode, node, label, owner, fuses, expiry);
         }
 
@@ -545,18 +558,28 @@ contract L2NameWrapper is
         bytes32 labelhash = keccak256(bytes(label));
         node = _makeNode(parentNode, labelhash);
 
-        _canCallSetSubnodeOwner(parentNode, node);
+        // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
+        _canCallSetSubnode(parentNode, node);
+
+        // Checks to make sure the IS_DOT_ETH fuse is not burnt in the fuses. 
         _fusesAreSettable(node, fuses);
+
+        // If the name has not been set before, save the label.
         bytes memory name = _saveLabel(parentNode, node, label);
 
         // Use a block to avoid stack too deep error.
         {
             (, , uint64 oldExpiry) = getData(uint256(node));
             (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
+
+            // If we are burning parent controlled fuses make sure the parent has burned CANNOT_UNWRAP.
             _checkParentFuses(node, fuses, parentFuses);
+
+            // Make sure the expiry is between the old expiry and the parent expiry.
             expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
         }
 
+        // If the name is NOT wrapped, wrap it.
         if (!_isWrapped(node)) {
             ens.setSubnodeRecord(
                 parentNode,
@@ -567,6 +590,8 @@ contract L2NameWrapper is
             );
             _wrap(node, name, owner, fuses, expiry);
         } else {
+
+            // The name is wrapped, so update it.
             ens.setSubnodeRecord(
                 parentNode,
                 labelhash,
@@ -667,7 +692,7 @@ contract L2NameWrapper is
      * @param node Namehash of the subname to check
      */
 
-    function _canCallSetSubnodeOwner(
+    function _canCallSetSubnode(
         bytes32 parentNode,
         bytes32 node
     ) internal view {
@@ -677,21 +702,24 @@ contract L2NameWrapper is
             uint64 nodeExpiry
         ) = getData(uint256(node));
 
-        // check if the wrapper owner is 0 and expired
-        // If either, then check parent fuses for CANNOT_CREATE_SUBDOMAIN
         bool expired = nodeExpiry < block.timestamp;
+
+        // Check if the name is expired and the owner is 0. 
+
         if (
-            expired &&
-            // protects a name that has been unwrapped with PCC and doesn't allow the parent to take control by recreating it if unexpired
-            (nodeOwner == address(0) ||
-                // protects a name that has been burnt and doesn't allow the parent to take control by recreating it if unexpired
-                ens.owner(node) == address(0))
+            expired && (nodeOwner == address(0) || ens.owner(node) == address(0))
         ) {
+
+            // The name is expired, so check if the parent has CANNOT_CREATE_SUBDOMAIN set.
+
             (, uint32 parentFuses, ) = getData(uint256(parentNode));
             if (parentFuses & CANNOT_CREATE_SUBDOMAIN != 0) {
                 revert OperationProhibited(node);
             }
         } else {
+
+            // The name is NOT expired, so check if the node has PARENT_CANNOT_CONTROL set. 
+
             if (nodeFuses & PARENT_CANNOT_CONTROL != 0) {
                 revert OperationProhibited(node);
             }
@@ -815,9 +843,17 @@ contract L2NameWrapper is
         bytes32 node,
         string memory label
     ) internal returns (bytes memory) {
-        bytes memory name = _addLabel(label, names[parentNode]);
-        names[node] = name;
-        return name;
+
+        // If the name has not been set then set it. 
+        if (names[node].length == 0) {
+            bytes memory name = _addLabel(label, names[parentNode]);
+            names[node] = name;
+            
+            return name;
+        }
+
+        // If the name is already set then just return it. 
+        return names[node];
     }
 
     function _updateName(
@@ -831,8 +867,9 @@ contract L2NameWrapper is
         (address oldOwner, uint32 oldFuses, uint64 oldExpiry) = getData(
             uint256(node)
         );
-        bytes memory name = _addLabel(label, names[parentNode]);
+
         if (names[node].length == 0) {
+            bytes memory name = _addLabel(label, names[parentNode]);
             names[node] = name;
         }
         _setFuses(node, oldOwner, oldFuses | fuses, oldExpiry, expiry);
@@ -945,11 +982,12 @@ contract L2NameWrapper is
     }
 
     function _canFusesBeBurned(bytes32 node, uint32 fuses) internal pure {
-        // If a non-parent controlled fuse is being burned, check PCC and CU are burnt
+
         if (
+            // If an owner controlled fuse is burned,
             fuses & ~PARENT_CONTROLLED_FUSES != 0 &&
-            fuses & (PARENT_CANNOT_CONTROL | CANNOT_UNWRAP) !=
-            (PARENT_CANNOT_CONTROL | CANNOT_UNWRAP)
+            // revert if PARENT_CANNOT_CONTROL and CANNOT_UNWRAP are not burned.
+            fuses & (PARENT_CANNOT_CONTROL | CANNOT_UNWRAP) != (PARENT_CANNOT_CONTROL | CANNOT_UNWRAP)
         ) {
             revert OperationProhibited(node);
         }
