@@ -120,6 +120,9 @@ contract L2NameWrapper is
 
     /**
      * @notice Approves an address for a name
+     * @dev Approved addresses are restricted to being able to renew the name or subnames of the name.
+     *      This is particularly useful for creating renewal controllers, contracts tasked with renewing
+     *      names for example for a fee.
      * @param to address to approve
      * @param tokenId name to approve
      */
@@ -129,18 +132,24 @@ contract L2NameWrapper is
         uint256 tokenId
     ) public override(ERC1155Fuse, IL2NameWrapper) {
         (, uint32 fuses, ) = getData(tokenId);
+
+        // Make sure CANNOT_APPROVE is not burnt.
         if (fuses & CANNOT_APPROVE == CANNOT_APPROVE) {
             revert OperationProhibited(bytes32(tokenId));
         }
+
+        // Approve the address.
         super.approve(to, tokenId);
     }
 
     /**
      * @notice Gets the data for a name
+     * @dev If the name is expired, the fuses are set to 0. If the name is emancipated and 
+     *      expired, both the fuses and the owner are set to 0.
      * @param id Namehash of the name
-     * @return owner Owner of the name
-     * @return fuses Fuses of the name
-     * @return expiry Expiry of the name
+     * @return owner The owner of the name.
+     * @return fuses The fuses of the name.
+     * @return expiry The expiry of the name. 
      */
 
     function getData(
@@ -153,7 +162,21 @@ contract L2NameWrapper is
     {
         (owner, fuses, expiry) = super.getData(id);
 
-        (owner, fuses) = _clearOwnerAndFuses(owner, fuses, expiry);
+        // Check to see if the name is expired.
+        if (expiry < block.timestamp) {
+
+            /** If the name is emancipated, set the owner to 0.
+             *  This is necessary so that expired emanciapted names cannot be transferred,
+             *  which could include selling an expired name in a marketplace.
+             */
+
+            if (fuses & PARENT_CANNOT_CONTROL == PARENT_CANNOT_CONTROL) {
+                owner = address(0);
+            }
+
+            // The name is expired, so set the fuses to 0.
+            fuses = 0;
+        }
     }
 
     /* Metadata service */
@@ -403,9 +426,6 @@ contract L2NameWrapper is
         (address currentOwner, uint32 fuses, uint64 expiry) = getData(
             uint256(node)
         );
-
-        // Get labelhash from the name
-        (bytes32 labelhash, ) = name.readLabel(0);
 
         address approved = getApproved(uint256(node));
 
@@ -780,15 +800,8 @@ contract L2NameWrapper is
         address owner,
         uint32 fuses,
         uint64 expiry
-    ) internal view override returns (address, uint32) {
-        if (expiry < block.timestamp) {
-            if (fuses & PARENT_CANNOT_CONTROL == PARENT_CANNOT_CONTROL) {
-                owner = address(0);
-            }
-            fuses = 0;
-        }
-
-        return (owner, fuses);
+    ) internal pure override returns (address, uint32) {
+        // Currently this is a dummy function. It needs to also be removed from ERC1155Fuse to remove it. 
     }
 
     function _makeNode(
