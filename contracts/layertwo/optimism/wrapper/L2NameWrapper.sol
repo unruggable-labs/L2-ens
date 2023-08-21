@@ -202,7 +202,7 @@ contract L2NameWrapper is
         }
     }
 
-    /* Metadata service */
+    /* Metadata Service */
 
     /**
      * @notice Set the metadata service. Only the owner can do this
@@ -279,35 +279,6 @@ contract L2NameWrapper is
             !_isETH2LDInGracePeriod(fuses, expiry);
     }
 
-    /**
-     * @notice Checks if the address is the owner, operator or is approved by owner.
-     * @param node The namehash of the name to check.
-     * @param addr The address to check permissions on.
-     * @return Whether or not the address is the owner, operator or approved.
-     */
-
-    function canExtendSubnames(
-        bytes32 node,
-        address addr
-    ) public view returns (bool) {
-        (address owner, uint32 fuses, uint64 expiry) = getData(uint256(node));
-
-        return
-            // Check if the owner or operator of the owner is the address.
-            (owner == addr || isApprovedForAll(owner, addr) 
-
-                /**
-                 * Check if the address is approved for the name. Approved addresses are
-                 * restricted to being able to renew the name or subnames of the name.
-                 * Approved addresses are particularly useful for creating renewal controllers,
-                 * contracts tasked with renewing names for example for a fee.
-                 */
-
-                || getApproved(uint256(node)) == addr) &&
-
-                // Also if the name is a 2LD, e.g, vitalik.eth, make sure that it is not in the grace period.
-                !_isETH2LDInGracePeriod(fuses, expiry);
-    }
 
     /**
      * @dev Registers a new .eth second-level domain and wraps it.
@@ -346,6 +317,30 @@ contract L2NameWrapper is
             expiry,
             resolver
         );
+    }
+
+    /**
+     * @notice Checks if the address is the owner or operator of the name. This function 
+     * is a version of the canModifyName function, where the data is also passed, avoiding an extra getData call.
+     * @param addr The address to check for permissions.
+     * @param owner The owner of the name.
+     * @param fuses The fuses of the name.
+     * @param expiry The expiry of the name.
+     * @return Whether or not the address is the owner or an operator of the name.
+     */
+    function canModifyName_WithData(
+        address addr,
+        address owner,
+        uint32 fuses,
+        uint64 expiry
+    ) public view returns (bool) {
+
+        return
+            // Check if the address is the owner or an approved-for-all address.
+            (owner == addr || isApprovedForAll(owner, addr)) &&
+
+            // Also if the name is a .eth 2LD, e.g, vitalik.eth, make sure that it is not in the grace period.
+            !_isETH2LDInGracePeriod(fuses, expiry);
     }
 
     /**
@@ -401,11 +396,11 @@ contract L2NameWrapper is
     }
 
     /**
-     * @notice Extends expiry for a name
-     * @param parentNode Parent namehash of the name e.g. vitalik.xyz would be namehash('xyz')
-     * @param labelhash Labelhash of the name, e.g. vitalik.xyz would be keccak256('vitalik')
-     * @param expiry When the name will expire in seconds since the Unix epoch
-     * @return New expiry
+     * @notice A function to extend the expiry of a name.
+     * @param parentNode The parrent namehash of the name, e.g. vitalik.xyz would be namehash('xyz').
+     * @param labelhash The labelhash of the name, e.g. vitalik.xyz would be keccak256('vitalik').
+     * @param expiry The time when the name will expire in seconds since the Unix epoch.
+     * @return The new expiry.
      */
 
     function extendExpiry(
@@ -420,7 +415,9 @@ contract L2NameWrapper is
             revert NameIsNotWrapped();
         }
 
+        // Get the data from the node and parent node. 
         (address owner, uint32 fuses, uint64 oldExpiry) = getData(uint256(node));
+        (address parentOwner, uint32 parentFuses, uint64 parentExpiry) = getData(uint256(parentNode));
 
         /**
          * Only allow the owner of the parent name, owner of the name with CAN_EXTEND_EXPIRY,
@@ -428,18 +425,31 @@ contract L2NameWrapper is
          */
 
         // If the caller is the parent name make sure it has the permissions to extend the expiry.
-        if (!canExtendSubnames(parentNode, msg.sender) && 
-
-            // If the caller is the owner of the name make sure CAN_EXTEND_EXPIRY has been burned.
-            !(canModifyName(node, msg.sender) && fuses & CAN_EXTEND_EXPIRY != 0) &&
+        if (!canModifyName_WithData(msg.sender, parentOwner, parentFuses, parentExpiry) && 
 
             /** 
-             * If the caller is the approved contract of the name, allow it to extend the expiry.
+             * If the caller is the approved address of the parent name, allow it to extend the expiry.   
+             * This allows for parent level renewal controllers to be assigned to renew names on bahalf
+             * of parent name owners. Parent level renewal controllers can be used in combination with 
+             * a registrar to create a system for renting subnames. A single parent level renewal controller
+             * can be for situations where the policies for subname rentals are mostly uniform, for exmaple in
+             * the case of a domain registration system where subnames are all subnames can be renwed for a 
+             * flat fee, such as $5 per year. Also we check to make sure the parent level name is not in the
+             * in the grace period. 
+             */
+
+            !(msg.sender == getApproved(uint256(parentNode)) && !_isETH2LDInGracePeriod(parentFuses, parentExpiry)) &&
+
+            // If the caller is the owner of the name make sure CAN_EXTEND_EXPIRY has been burned.
+            !(canModifyName_WithData(msg.sender, owner, fuses, oldExpiry) && fuses & CAN_EXTEND_EXPIRY != 0) &&
+
+            /** 
+             * If the caller is the approved address of the name, allow it to extend the expiry.
              * This ability was introduced into this contract in order to allow for subname level
              * renewall controllers. Previously it was only possible to allow for parent level renewal
              * controllers. Subname level renewal controllers are more flexible, allowing a different 
              * renewal controller to be used for each subname. Another significan advantage is that
-             * it is not necessary to buren CANNOT_APPROVE on the parent level name, and insetad
+             * it is not necessary to buren CANNOT_APPROVE on the parent level name, and instead
              * CANNOT_APPROVE can be burned on the subname level name. This is important because 
              * burning a permanent fuse on the parent level name cannot be undone, and is likely to
              * reduce the utilty and value of the parent level name, as well as potentially lock the
