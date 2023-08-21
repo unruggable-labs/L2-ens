@@ -623,10 +623,17 @@ contract L2NameWrapper is
             expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
         }
 
-        // If the name is NOT wrapped, wrap it.
+        // Check to see if the name is wrapped.
          if (!_isWrapped(node)) {
+
+            // The name is NOT wrapped.
+
+            // Set the subnode owner in the registry.
             ens.setSubnodeOwner(parentNode, labelhash, address(this));
+
+            // Wrap the name in the wrapper.
             _wrap(node, name, owner, fuses, expiry);
+
         } else {
 
             // The name is wrapped, so update it.
