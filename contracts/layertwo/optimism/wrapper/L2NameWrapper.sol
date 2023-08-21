@@ -33,21 +33,33 @@ contract L2NameWrapper is
     Controllable,
     ERC20Recoverable
 {
+    
+    // Use the BytesUtils library for bytes, e.g. name.namehash(0). 
     using BytesUtils for bytes;
 
+    // The ENS registry
     ENS public immutable ens;
+
+    // The metadata service used to get the metadata uri of each name. 
     IMetadataService public metadataService;
+
+    //The L2NameWrapper is upgradable. If an upgrade contract is specified, name owners can choose to upgrade.
+    INameWrapperUpgrade public upgradeContract;
+
+    /** 
+     * In the ENS registry only the namehash of each name is stored and not the actual name.
+     * To make it easier to retrieve the human readable name, saved in bytes using the DNS format,
+     * we store it here. 
+     */
+
     mapping(bytes32 => bytes) public names;
 
-    uint64 private constant GRACE_PERIOD = 90 days;
-    bytes32 private constant ETH_NODE =
-        0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
-    bytes32 private constant ETH_LABELHASH =
-        0x4f5b812789fc606be1b3b16908db13fc7a9adf7ca72641f84d75b47069d3d7f0;
-    bytes32 private constant ROOT_NODE =
-        0x0000000000000000000000000000000000000000000000000000000000000000;
+    /* Constants */
 
-    INameWrapperUpgrade public upgradeContract;
+    uint64 private constant GRACE_PERIOD = 90 days;
+    bytes32 private constant ETH_NODE = 0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
+    bytes32 private constant ETH_LABELHASH = 0x4f5b812789fc606be1b3b16908db13fc7a9adf7ca72641f84d75b47069d3d7f0;
+    bytes32 private constant ROOT_NODE = 0x0000000000000000000000000000000000000000000000000000000000000000;
     uint64 private constant MAX_EXPIRY = type(uint64).max;
 
     constructor(
@@ -74,6 +86,12 @@ contract L2NameWrapper is
         names[ROOT_NODE] = "\x00";
         names[ETH_NODE] = "\x03eth\x00";
     }
+
+    /**
+     * @notice Provides support for ERC-165, allowing checking for interfaces. 
+     * @param interfaceId The interface id of the name.
+     * @return The interface id. 
+     */
 
     function supportsInterface(
         bytes4 interfaceId
@@ -112,9 +130,13 @@ contract L2NameWrapper is
         returns (address operator)
     {
         address owner = ownerOf(id);
+
+        // Check to see if the owner is the 0 address.
         if (owner == address(0)) {
             return address(0);
         }
+
+        // Return the approved address.
         return super.getApproved(id);
     }
 
@@ -133,7 +155,7 @@ contract L2NameWrapper is
     ) public override(ERC1155Fuse, IL2NameWrapper) {
         (, uint32 fuses, ) = getData(tokenId);
 
-        // Make sure CANNOT_APPROVE is not burnt.
+        // Make sure CANNOT_APPROVE is not burned.
         if (fuses & CANNOT_APPROVE == CANNOT_APPROVE) {
             revert OperationProhibited(bytes32(tokenId));
         }
@@ -224,8 +246,8 @@ contract L2NameWrapper is
     }
 
     /**
-     * @notice Checks if msg.sender is the owner or operator of the owner of a name
-     * @param node namehash of the name to check
+     * @notice Checks if msg.sender is the owner or operator of the owner of a name.
+     * @param node The namehash of the name to check.
      */
 
     modifier onlyTokenOwner(bytes32 node) {
@@ -237,10 +259,10 @@ contract L2NameWrapper is
     }
 
     /**
-     * @notice Checks if owner or operator of the owner
-     * @param node namehash of the name to check
-     * @param addr which address to check permissions for
-     * @return whether or not is owner or operator
+     * @notice Checks if the address is the owner or operator of the name.
+     * @param node The namehash of the name to check.
+     * @param addr The address to check for permissions.
+     * @return Whether or not the address is the owner or an operator of the name.
      */
 
     function canModifyName(
@@ -250,18 +272,18 @@ contract L2NameWrapper is
         (address owner, uint32 fuses, uint64 expiry) = getData(uint256(node));
 
         return
-            // Check if the address is the owner or the approved for all address.
+            // Check if the address is the owner or an approved-for-all address.
             (owner == addr || isApprovedForAll(owner, addr)) &&
 
-            // Also if the name is a 2LD, e.g, vitalik.eth, make sure that it is not in the grace period.
+            // Also if the name is a .eth 2LD, e.g, vitalik.eth, make sure that it is not in the grace period.
             !_isETH2LDInGracePeriod(fuses, expiry);
     }
 
     /**
-     * @notice Checks if owner/operator or approved by owner
-     * @param node namehash of the name to check
-     * @param addr which address to check permissions for
-     * @return whether or not is owner/operator or approved
+     * @notice Checks if the address is the owner, operator or is approved by owner.
+     * @param node The namehash of the name to check.
+     * @param addr The address to check permissions on.
+     * @return Whether or not the address is the owner, operator or approved.
      */
 
     function canExtendSubnames(
@@ -664,8 +686,10 @@ contract L2NameWrapper is
             expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
         }
 
-        // If the name is NOT wrapped, wrap it.
+        // Check to see if the name is wrapped.
         if (!_isWrapped(node)) {
+            
+            // The name is NOT wrappped. 
 
             // Set the subnode record in the registry.
             ens.setSubnodeRecord(
@@ -678,9 +702,12 @@ contract L2NameWrapper is
 
             // Wrap the name in the wrapper.
             _wrap(node, name, owner, fuses, expiry);
+
         } else {
 
-            // The name is wrapped, so update it in the registry.
+            // The name is wrapped. 
+            
+            //Update the name in the registry.
             ens.setSubnodeRecord(
                 parentNode,
                 labelhash,
@@ -849,7 +876,7 @@ contract L2NameWrapper is
         return fuses & fuseMask == fuseMask;
     }
 
-    /***** Internal functions *****/
+    /* Internal Functions */
 
     /**
      * @notice This function is called by the ERC1155 contract when a token is transferred. 
@@ -894,12 +921,12 @@ contract L2NameWrapper is
         }
     }
 
+    // Currently this is a dummy function. It needs to also be removed from ERC1155Fuse to remove it. 
     function _clearOwnerAndFuses(
         address owner,
         uint32 fuses,
         uint64 expiry
     ) internal pure override returns (address, uint32) {
-        // Currently this is a dummy function. It needs to also be removed from ERC1155Fuse to remove it. 
     }
 
     /**
@@ -1036,6 +1063,17 @@ contract L2NameWrapper is
         return names[node];
     }
 
+
+    /**
+     * @notice This function updates a name.
+     * @param parentNode The parent node of the name.
+     * @param node The namehash of the name.
+     * @param label The label of the name.
+     * @param owner The owner of the name.
+     * @param fuses The fuses to set on the name.
+     * @param expiry The expiry date of the name, in seconds since the Unix epoch.
+     */
+
     function _updateName(
         bytes32 parentNode,
         bytes32 node,
@@ -1044,54 +1082,84 @@ contract L2NameWrapper is
         uint32 fuses,
         uint64 expiry
     ) internal {
-        (address oldOwner, uint32 oldFuses, uint64 oldExpiry) = getData(
-            uint256(node)
-        );
+        (address oldOwner, uint32 oldFuses, uint64 oldExpiry) = getData(uint256(node));
 
+        // If the name is not set, set it.
         if (names[node].length == 0) {
             bytes memory name = _addLabel(label, names[parentNode]);
             names[node] = name;
         }
+
+        // Set the data of the name. 
         _setFuses(node, oldOwner, oldFuses | fuses, oldExpiry, expiry);
+
+        // Check to see if the owner is being set to the 0 address.
         if (owner == address(0)) {
+
+            // If the owner is being set to the 0 address, unwrap the name.
             _unwrap(node, address(0));
+
         } else {
+
+            // The owner is not address(0), so transfer the owner of the name to the new owner. 
             _transfer(oldOwner, owner, uint256(node), 1, "");
         }
     }
 
+
+    /**
+     * @notice This function checks to see if burning parent controlled fuses if the parent has burned CANNOT_UNWRAP.
+     * @param node The namehash of the name.
+     * @param fuses The fuses of the name.
+     * @param parentFuses The fuses of the parent.
+     */
     function _checkParentFuses(
         bytes32 node,
         uint32 fuses,
         uint32 parentFuses
     ) internal pure {
 
-        // If we are burning parent controlled fuses
-        if (fuses & PARENT_CONTROLLED_FUSES != 0 && 
-            // and the parent has not burned CANNOT_UNWRAP
-            parentFuses & CANNOT_UNWRAP == 0) {
-
+        // If burning parent controlled fuses, check to make sure the parent has burnt CANNOT_UNWRAP.
+        if (fuses & PARENT_CONTROLLED_FUSES != 0 && parentFuses & CANNOT_UNWRAP == 0) {
             revert OperationProhibited(node);
         }
     }
+
+    /**
+     * @notice This function normalises the expiry of a name, setting the expiry
+     *         between the old expiry and the max expiry.
+     * @param expiry The expiry of the name.
+     * @param oldExpiry The old expiry of the name.
+     * @param maxExpiry The maximum expiry of the name.
+     */
 
     function _normaliseExpiry(
         uint64 expiry,
         uint64 oldExpiry,
         uint64 maxExpiry
     ) private pure returns (uint64) {
-        // Expiry cannot be more than maximum allowed
-        // .eth names will check registrar, non .eth check parent
+
+        // The expiry cannot be more than maximum. 
         if (expiry > maxExpiry) {
             expiry = maxExpiry;
         }
-        // Expiry cannot be less than old expiry
+        // The expiry cannot be less than the old expiry.
         if (expiry < oldExpiry) {
             expiry = oldExpiry;
         }
 
         return expiry;
     }
+
+    /**
+     * @notice This function wraps a .eth 2LD, i.e., vitalik.eth.
+     * @param label The label of the name.
+     * @param wrappedOwner The owner of the wrapped name.
+     * @param approved The approved address of the name.
+     * @param fuses The fuses to set on the name.
+     * @param expiry The expiry date of the name, in seconds since the Unix epoch.
+     * @param resolver The resolver contract of the name.
+     */
 
     function _wrapETH2LD(
         string memory label,
@@ -1103,10 +1171,15 @@ contract L2NameWrapper is
     ) private {
         bytes32 labelhash = keccak256(bytes(label));
         bytes32 node = _makeNode(ETH_NODE, labelhash);
-        // hardcode dns-encoded eth string for gas savings
+
+        // Hardcode the DNS encoded "eth" string for gas savings.
         bytes memory name = _addLabel(label, "\x03eth\x00");
+
+        // Save the name.
         names[node] = name;
 
+
+        // Wrap the .eth 2LD name in the wrapper, and burn CANNOT_UNWRAP, PARENT_CANNOT_CONTROL and IS_DOT_ETH.
         _wrap(
             node,
             name,
@@ -1115,15 +1188,23 @@ contract L2NameWrapper is
             expiry
         );
 
-        // Add an approved address
+        // Add an approved address.
         if (approved != address(0)) {
             super._approve(approved, uint256(node));
         }
 
+        // Check to make sure the resolver address is not the 0 address, if not then set the resolver.
         if (resolver != address(0)) {
             ens.setResolver(node, resolver);
         }
     }
+
+    /**
+     * @notice This function unwraps a name. This is only used in the L2NameWrapper contract for
+     *         burning names as it is not possible to unwrap unburned names.
+     * @param node The namehash of the name.
+     * @param owner The owner of the name.
+     */
 
     function _unwrap(bytes32 node, address owner) private {
         if (allFusesBurned(node, CANNOT_UNWRAP)) {
@@ -1168,37 +1249,70 @@ contract L2NameWrapper is
         super._setData(uint256(node), owner, fuses, expiry);
     }
 
+    /**
+     * @notice Checks to see if owner controlled fuses are being burned, and if so,
+     *         checks to see if PARENT_CANNOT_CONTROL and CANNOT_UNWRAP are also being burned.
+     * @param node The namehash of the name.
+     * @param fuses The fuses of the name.
+     */
+    
     function _canFusesBeBurned(bytes32 node, uint32 fuses) internal pure {
 
         if (
-            // If an owner controlled fuse is burned,
+            
+            // Check to see if owner controlled fueses are being burned.
             fuses & ~PARENT_CONTROLLED_FUSES != 0 &&
-            // revert if PARENT_CANNOT_CONTROL and CANNOT_UNWRAP are not also burned.
+
+            // Check to see if PARENT_CANNOT_CONTROL and CANNOT_UNWRAP are being burned.
             fuses & (PARENT_CANNOT_CONTROL | CANNOT_UNWRAP) != (PARENT_CANNOT_CONTROL | CANNOT_UNWRAP)
         ) {
             revert OperationProhibited(node);
         }
     }
 
+    /**
+     * @notice Check to make sure the special fuse, IS_DOT_ETH is not being burned.
+     * @param node The namehash of the name.
+     * @param fuses The fuses of the name.
+     */
+
     function _fusesAreSettable(bytes32 node, uint32 fuses) internal pure {
+
+        // Check to make sure that only allowable fuses are being burned, i.e. not IS_DOT_ETH.
         if (fuses | USER_SETTABLE_FUSES != USER_SETTABLE_FUSES) {
-            // Cannot directly burn other non-user settable fuses
             revert OperationProhibited(node);
         }
     }
 
+    /**
+     * @notice Checks to see if the name is wrapped.
+     * @dev It is not possible to unwrap names with the L2NameWrapper, so we can simply check
+     *      to see if the owner of the name is the owner in the L2NameWrapper contract here. 
+     * @param node The namehash of the name.
+     */    
+
     function _isWrapped(bytes32 node) internal view returns (bool) {
         return
-            ownerOf(uint256(node)) != address(0); //&& @audit - removed checking the registry since names are always wrapped.  
-            //ens.owner(node) == address(this);
+            ownerOf(uint256(node)) != address(0); 
     }
+
+    /**
+     * @notice Checks to see if the name is a .eth 2LD in the grace period.
+     * @param fuses The fuses of the name.
+     * @param expiry The expiry of the name.
+     */
 
     function _isETH2LDInGracePeriod(
         uint32 fuses,
         uint64 expiry
     ) internal view returns (bool) {
+
         return
+
+            // Check to see if the name is a .eth 2LD.
             fuses & IS_DOT_ETH == IS_DOT_ETH &&
+
+            // Check to see if the name is in the grace period.
             expiry - GRACE_PERIOD < block.timestamp;
     }
 }
