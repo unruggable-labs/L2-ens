@@ -777,8 +777,8 @@ contract L2NameWrapper is
                 revert IncorrectTargetOwner(owner);
             }
 
-            // Unwrap the name.
-            _unwrap(node, address(0));
+            // Burn the name both in the wrapper and the registry.
+            _burnAll(node);
 
         } else {
 
@@ -1113,8 +1113,8 @@ contract L2NameWrapper is
         // Check to see if the owner is being set to the 0 address.
         if (owner == address(0)) {
 
-            // If the owner is being set to the 0 address, unwrap the name.
-            _unwrap(node, address(0));
+            // burn the name in both the wrapper and the registry.
+            _burnAll(node);
 
         } else {
 
@@ -1217,23 +1217,34 @@ contract L2NameWrapper is
     }
 
     /**
-     * @notice This function unwraps a name. This is only used in the L2NameWrapper contract for
-     *         burning names as it is not possible to unwrap unburned names.
+     * @notice This function burns the token and sets the address to 0 in the registry. 
      * @param node The namehash of the name.
-     * @param owner The owner of the name.
      */
 
-    function _unwrap(bytes32 node, address owner) private {
+    function _burnAll(bytes32 node) private {
+
+        // Check to see if CANNOT_UNWRAP is burned.
         if (allFusesBurned(node, CANNOT_UNWRAP)) {
             revert OperationProhibited(node);
         }
 
         // Burn token and fuse data
         _burn(uint256(node));
-        ens.setOwner(node, owner);
 
-        emit NameUnwrapped(node, owner);
+        // Set the owner in the registry.
+        ens.setOwner(node, address(0));
+
+        emit NameUnwrapped(node, address(0));
     }
+
+    /**
+     * @notice This function sets the fuses of a name.
+     * @param node The namehash of the name.
+     * @param owner The owner of the name.
+     * @param fuses The fuses to set on the name.
+     * @param oldExpiry The old expiry of the name.
+     * @param expiry The expiry date of the name, in seconds since the Unix epoch.
+     */
 
     function _setFuses(
         bytes32 node,
@@ -1242,12 +1253,24 @@ contract L2NameWrapper is
         uint64 oldExpiry,
         uint64 expiry
     ) internal {
+
         _setData(node, owner, fuses, expiry);
+
         emit FusesSet(node, fuses);
+
+        // Check to see if the expiry has been extended.
         if (expiry > oldExpiry) {
             emit ExpiryExtended(node, expiry);
         }
     }
+
+    /**
+     * @notice This function sets the data of a name.
+     * @param node The namehash of the name.
+     * @param owner The owner of the name.
+     * @param fuses The fuses to set on the name.
+     * @param expiry The expiry date of the name, in seconds since the Unix epoch.
+     */
 
     function _setData(
         bytes32 node,
@@ -1277,7 +1300,7 @@ contract L2NameWrapper is
 
         if (
             
-            // Check to see if owner controlled fueses are being burned.
+            // Check to see if owner controlled fuses are being burned.
             fuses & ~PARENT_CONTROLLED_FUSES != 0 &&
 
             // Check to see if PARENT_CANNOT_CONTROL and CANNOT_UNWRAP are being burned.
