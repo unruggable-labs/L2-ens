@@ -570,9 +570,6 @@ contract L2NameWrapper is
             }
         }
 
-        // If we are burning parent controlled fuses make sure the parent has burned CANNOT_UNWRAP.
-        _checkParentFuses(node, fuses, parentFuses);
-
         // Make sure the expiry is between the old expiry and the parent expiry.
         expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
 
@@ -625,9 +622,6 @@ contract L2NameWrapper is
         {
             (, , uint64 oldExpiry) = getData(uint256(node));
             (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
-
-            // If we are burning parent controlled fuses make sure the parent has burned CANNOT_UNWRAP.
-            _checkParentFuses(node, fuses, parentFuses);
 
             // Make sure the expiry is between the old expiry and the parent expiry.
             expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
@@ -695,9 +689,6 @@ contract L2NameWrapper is
         {
             (, , uint64 oldExpiry) = getData(uint256(node));
             (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
-
-            // If we are burning parent controlled fuses make sure the parent has burned CANNOT_UNWRAP.
-            _checkParentFuses(node, fuses, parentFuses);
 
             // Make sure the expiry is between the old expiry and the parent expiry.
             expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
@@ -1120,25 +1111,6 @@ contract L2NameWrapper is
 
             // The owner is not address(0), so transfer the owner of the name to the new owner. 
             _transfer(oldOwner, owner, uint256(node), 1, "");
-        }
-    }
-
-
-    /**
-     * @notice This function checks to see if burning parent controlled fuses if the parent has burned CANNOT_UNWRAP.
-     * @param node The namehash of the name.
-     * @param fuses The fuses of the name.
-     * @param parentFuses The fuses of the parent.
-     */
-    function _checkParentFuses(
-        bytes32 node,
-        uint32 fuses,
-        uint32 parentFuses
-    ) internal pure {
-
-        // If burning parent controlled fuses, check to make sure the parent has burnt CANNOT_UNWRAP.
-        if (fuses & PARENT_CONTROLLED_FUSES != 0 && parentFuses & CANNOT_UNWRAP == 0) {
-            revert OperationProhibited(node);
         }
     }
 
