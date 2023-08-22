@@ -66,11 +66,12 @@ contract L2NameWrapper is
         ENS _ens,
         IMetadataService _metadataService
     ) {
+
+        // Setup the registry and metadata service.
         ens = _ens;
         metadataService = _metadataService;
 
-        /* Burn PARENT_CANNOT_CONTROL and CANNOT_UNWRAP fuses for ROOT_NODE and ETH_NODE and set expiry to max */
-
+        // Burn PARENT_CANNOT_CONTROL and CANNOT_UNWRAP fuses for ROOT_NODE and ETH_NODE and set expiry to max.
         _setData(
             uint256(ETH_NODE),
             address(0),
@@ -83,6 +84,8 @@ contract L2NameWrapper is
             uint32(PARENT_CANNOT_CONTROL | CANNOT_UNWRAP),
             MAX_EXPIRY
         );
+
+        // Set the names of both the root and eth node.
         names[ROOT_NODE] = "\x00";
         names[ETH_NODE] = "\x03eth\x00";
     }
@@ -488,6 +491,8 @@ contract L2NameWrapper is
     function upgrade(bytes calldata name, bytes calldata extraData) public {
         bytes32 node = name.namehash(0);
 
+        (address owner, uint32 fuses, uint64 expiry) = getData(uint256(node));
+
         // Make sure the upgrade contract is set.
         if (address(upgradeContract) == address(0)) {
             revert CannotUpgrade();
@@ -498,11 +503,9 @@ contract L2NameWrapper is
          * and not a 2LD, e.g. vitalik.eth., in the grace period.
          */
 
-        if (!canModifyName(node, msg.sender)) {
+        if (!canModifyName_WithData(msg.sender, owner, fuses, expiry)){
             revert Unauthorised(node, msg.sender);
         }
-
-        (address currentOwner, uint32 fuses, uint64 expiry) = getData(uint256(node));
 
         // Get the approved address.
         address approved = getApproved(uint256(node));
@@ -516,7 +519,7 @@ contract L2NameWrapper is
         // Call the upgrade contract to wrap the name.
         upgradeContract.wrapFromUpgrade(
             name,
-            currentOwner,
+            owner,
             fuses,
             expiry,
             approved,
@@ -761,6 +764,7 @@ contract L2NameWrapper is
         // Check to see if the owner is being set to the 0 address.
         if (owner == address(0)) {
 
+            // Get the data of the name.
             (, uint32 fuses, ) = getData(uint256(node));
 
             // Check to make sure the name is NOT a .eth 2LD, e.g. vitalik.eth.
@@ -772,6 +776,8 @@ contract L2NameWrapper is
             _burnAll(node);
 
         } else {
+
+            // The name is NOT being set to the 0 address.
 
             // Get the current owner of the name. 
             address oldOwner = ownerOf(uint256(node));
