@@ -235,6 +235,8 @@ contract L2NameWrapper is
         return metadataService.uri(tokenId);
     }
 
+    /* Name Wrapper */
+
     /**
      * @notice Set the address of the upgradeContract of the contract. only admin can do this
      * @dev The default value of upgradeContract is the 0 address. Use the 0 address at any time
@@ -296,7 +298,7 @@ contract L2NameWrapper is
         address owner,
         uint32 fuses,
         uint64 expiry
-    ) public view returns (bool) {
+    ) internal view returns (bool) {
 
         return
             // Check if the address is the owner or an approved-for-all address.
@@ -344,7 +346,6 @@ contract L2NameWrapper is
             resolver
         );
     }
-
 
     /**
      * @notice Renews a .eth second-level domain.
