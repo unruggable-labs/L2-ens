@@ -282,6 +282,29 @@ contract L2NameWrapper is
             !_isETH2LDInGracePeriod(fuses, expiry);
     }
 
+    /**
+     * @notice Checks if the address is the owner or operator of the name. This function 
+     * is a version of the canModifyName function, where the data is also passed, avoiding an extra getData call.
+     * @param addr The address to check for permissions.
+     * @param owner The owner of the name.
+     * @param fuses The fuses of the name.
+     * @param expiry The expiry of the name.
+     * @return Whether or not the address is the owner or an operator of the name.
+     */
+    function canModifyName_WithData(
+        address addr,
+        address owner,
+        uint32 fuses,
+        uint64 expiry
+    ) public view returns (bool) {
+
+        return
+            // Check if the address is the owner or an approved-for-all address.
+            (owner == addr || isApprovedForAll(owner, addr)) &&
+
+            // Also if the name is a .eth 2LD, e.g, vitalik.eth, make sure that it is not in the grace period.
+            !_isETH2LDInGracePeriod(fuses, expiry);
+    }
 
     /**
      * @dev Registers a new .eth second-level domain and wraps it.
@@ -322,29 +345,6 @@ contract L2NameWrapper is
         );
     }
 
-    /**
-     * @notice Checks if the address is the owner or operator of the name. This function 
-     * is a version of the canModifyName function, where the data is also passed, avoiding an extra getData call.
-     * @param addr The address to check for permissions.
-     * @param owner The owner of the name.
-     * @param fuses The fuses of the name.
-     * @param expiry The expiry of the name.
-     * @return Whether or not the address is the owner or an operator of the name.
-     */
-    function canModifyName_WithData(
-        address addr,
-        address owner,
-        uint32 fuses,
-        uint64 expiry
-    ) public view returns (bool) {
-
-        return
-            // Check if the address is the owner or an approved-for-all address.
-            (owner == addr || isApprovedForAll(owner, addr)) &&
-
-            // Also if the name is a .eth 2LD, e.g, vitalik.eth, make sure that it is not in the grace period.
-            !_isETH2LDInGracePeriod(fuses, expiry);
-    }
 
     /**
      * @notice Renews a .eth second-level domain.
