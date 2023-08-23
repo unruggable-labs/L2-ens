@@ -54,6 +54,16 @@ contract L2NameWrapper is
 
     mapping(bytes32 => bytes) public names;
 
+    // Make a struct to hold node data. We need this to avoid a stack too deep error.
+    struct NodeData {
+        address nodeOwner;
+        uint32 nodeFuses;
+        uint64 nodeExpiry;
+        address parentNodeOwner;
+        uint32 parentFuses;
+        uint64 parentExpiry;
+    }
+
     /* Constants */
 
     uint64 private constant GRACE_PERIOD = 90 days;
@@ -523,6 +533,7 @@ contract L2NameWrapper is
         // Make sure the fuses being set do NOT include IS_DOT_ETH.
         _fusesAreSettable(node, fuses);
 
+        // Get the data from the node.
         (address owner, uint32 oldFuses, uint64 oldExpiry) = getData(uint256(node));
 
         // Make sure the name is wrapped.
@@ -589,23 +600,23 @@ contract L2NameWrapper is
         bytes32 labelhash = keccak256(bytes(label));
         node = _makeNode(parentNode, labelhash);
 
-        // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
-        _canCallSetSubnode(parentNode, node);
+        // Use a block to avoid stack too deep error.
+        {
+            (address nodeOwner, uint32 nodeFuses, uint64 oldExpiry) = getData(uint256(node));
+            (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
+
+            // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
+            _canCallSetSubnode_WithData(parentFuses, node, nodeOwner, nodeFuses, oldExpiry);
+
+            // Make sure the expiry is between the old expiry and the parent expiry.
+            expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
+        }        
 
         // Checks to make sure the IS_DOT_ETH fuse is not burnt in the fuses. 
         _fusesAreSettable(node, fuses);
 
         // If the name has not been set before, save the label.
         bytes memory name = _saveLabel(parentNode, node, label);
-
-        // Use a block to avoid stack too deep error.
-        {
-            (, , uint64 oldExpiry) = getData(uint256(node));
-            (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
-
-            // Make sure the expiry is between the old expiry and the parent expiry.
-            expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
-        }
 
         // Check to see if the name is wrapped.
          if (!_isWrapped(node)) {
@@ -656,23 +667,27 @@ contract L2NameWrapper is
         bytes32 labelhash = keccak256(bytes(label));
         node = _makeNode(parentNode, labelhash);
 
-        // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
-        _canCallSetSubnode(parentNode, node);
+        // Use a block to avoid stack too deep error.
+        {
+            // Make an instance of the struct to hold the data of the node and parent node.
+            NodeData memory nodeData;
+
+            // Get the data from the node and the parent node and save it in the struct. 
+            (nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry) = getData(uint256(node));
+            (nodeData.parentNodeOwner, nodeData.parentFuses, nodeData.parentExpiry) = getData(uint256(parentNode));
+
+            // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
+            _canCallSetSubnode_WithData(nodeData.parentFuses, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry);
+
+            // Make sure the expiry is between the old expiry and the parent expiry.
+            expiry = _normaliseExpiry(expiry, nodeData.nodeExpiry, nodeData.parentExpiry);
+        }
 
         // Checks to make sure the IS_DOT_ETH fuse is not burnt in the fuses. 
         _fusesAreSettable(node, fuses);
 
         // If the name has not been set before, save the label.
         bytes memory name = _saveLabel(parentNode, node, label);
-
-        // Use a block to avoid stack too deep error.
-        {
-            (, , uint64 oldExpiry) = getData(uint256(node));
-            (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
-
-            // Make sure the expiry is between the old expiry and the parent expiry.
-            expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
-        }
 
         // Check to see if the name is wrapped.
         if (!_isWrapped(node)) {
@@ -738,7 +753,7 @@ contract L2NameWrapper is
         // Set the record in the registry.
         ens.setRecord(node, address(this), resolver, ttl);
 
-        // Check to see if the owner is being set to the 0 address.
+        // Check to see if the owner is being set to the 0 address, i.e. is being burned. 
         if (owner == address(0)) {
 
             // Get the data of the name.
@@ -833,6 +848,45 @@ contract L2NameWrapper is
             // The name is expired.
 
             (, uint32 parentFuses, ) = getData(uint256(parentNode));
+
+            // Check to see if the parent has CANNOT_CREATE_SUBDOMAIN burnt.
+            if (parentFuses & CANNOT_CREATE_SUBDOMAIN != 0) {
+                revert OperationProhibited(node);
+            }
+        } else {
+
+            // The name is NOT expired.  
+
+            // Check if the node has PARENT_CANNOT_CONTROL set.
+            if (nodeFuses & PARENT_CANNOT_CONTROL != 0) {
+                revert OperationProhibited(node);
+            }
+        }
+    }
+
+    /**
+     * @notice Check whether a name can call setSubnodeOwner/setSubnodeRecord. A version of _canCallSetSubnode
+     *        where the data is also passed, avoiding extra getData calls.
+     * @dev Checks both CANNOT_CREATE_SUBDOMAIN and PARENT_CANNOT_CONTROL and whether not they have been burnt
+     *      and checks whether the owner of the subdomain is 0x0 for creating or already exists for
+     *      replacing a subdomain. If either conditions are true, then it is possible to call
+     *      setSubnodeOwner
+     * @param parentFuses The fuses of the parent name.
+     * @param node The namehash of the subname to check.
+     */
+
+    function _canCallSetSubnode_WithData(
+        uint32 parentFuses,
+        bytes32 node,
+        address nodeOwner,
+        uint32 nodeFuses,
+        uint64 nodeExpiry
+    ) internal view {
+
+        // Check if the name is expired and the owner is the 0 address. 
+        if ((nodeExpiry < block.timestamp) && (nodeOwner == address(0) || ens.owner(node) == address(0))) {
+            
+            // The name is expired.
 
             // Check to see if the parent has CANNOT_CREATE_SUBDOMAIN burnt.
             if (parentFuses & CANNOT_CREATE_SUBDOMAIN != 0) {
