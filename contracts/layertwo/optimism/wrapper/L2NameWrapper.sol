@@ -59,7 +59,7 @@ contract L2NameWrapper is
         address nodeOwner;
         uint32 nodeFuses;
         uint64 nodeExpiry;
-        address parentNodeOwner;
+        address parentOwner;
         uint32 parentFuses;
         uint64 parentExpiry;
     }
@@ -667,21 +667,18 @@ contract L2NameWrapper is
         bytes32 labelhash = keccak256(bytes(label));
         node = _makeNode(parentNode, labelhash);
 
-        // Use a block to avoid stack too deep error.
-        {
-            // Make an instance of the struct to hold the data of the node and parent node.
-            NodeData memory nodeData;
+        // Make an instance of the struct to hold the data of the node and parent node.
+        NodeData memory nodeData;
 
-            // Get the data from the node and the parent node and save it in the struct. 
-            (nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry) = getData(uint256(node));
-            (nodeData.parentNodeOwner, nodeData.parentFuses, nodeData.parentExpiry) = getData(uint256(parentNode));
+        // Get the data from the node and the parent node and save it in the struct. 
+        (nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry) = getData(uint256(node));
+        (nodeData.parentOwner, nodeData.parentFuses, nodeData.parentExpiry) = getData(uint256(parentNode));
 
-            // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
-            _canCallSetSubnode_WithData(nodeData.parentFuses, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry);
+        // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
+        _canCallSetSubnode_WithData(nodeData.parentFuses, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry);
 
-            // Make sure the expiry is between the old expiry and the parent expiry.
-            expiry = _normaliseExpiry(expiry, nodeData.nodeExpiry, nodeData.parentExpiry);
-        }
+        // Make sure the expiry is between the old expiry and the parent expiry.
+        expiry = _normaliseExpiry(expiry, nodeData.nodeExpiry, nodeData.parentExpiry);
 
         // Checks to make sure the IS_DOT_ETH fuse is not burnt in the fuses. 
         _fusesAreSettable(node, fuses);
