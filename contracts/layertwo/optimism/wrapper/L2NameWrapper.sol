@@ -56,6 +56,8 @@ contract L2NameWrapper is
 
     // Make a struct to hold node data. We need this to avoid a stack too deep error.
     struct NodeData {
+        string label;
+        address owner;
         address nodeOwner;
         uint32 nodeFuses;
         uint64 nodeExpiry;
@@ -166,6 +168,8 @@ contract L2NameWrapper is
         address to,
         uint256 tokenId
     ) public override(ERC1155Fuse, IL2NameWrapper) {
+
+        // Get the data from the name. 
         (, uint32 fuses, ) = getData(tokenId);
 
         // Make sure CANNOT_APPROVE is not burned.
@@ -195,6 +199,8 @@ contract L2NameWrapper is
         override(ERC1155Fuse, IL2NameWrapper)
         returns (address owner, uint32 fuses, uint64 expiry)
     {
+
+        // Get the data from the name.
         (owner, fuses, expiry) = super.getData(id);
 
         // Check to see if the name is expired.
@@ -284,6 +290,8 @@ contract L2NameWrapper is
         bytes32 node,
         address addr
     ) public view returns (bool) {
+
+        // Get the data from the node.
         (address owner, uint32 fuses, uint64 expiry) = getData(uint256(node));
 
         return
@@ -317,12 +325,14 @@ contract L2NameWrapper is
 
         // Create a labelhash from the label.
         bytes32 labelhash = keccak256(bytes(label));
-        // Save the subname in the registry.
 
+        // Save the subname in the registry.
         ens.setSubnodeRecord(ETH_NODE, labelhash, address(this), address(0), 0);
 
+        // Set the expiry to the duration plus the current time plus the grace period.
         expiry = uint64(block.timestamp) + uint64(duration) + GRACE_PERIOD;
 
+        // Wrap the name.
         _wrapETH2LD(
             label,
             wrappedOwner,
@@ -361,6 +371,7 @@ contract L2NameWrapper is
 
         return expiry;
     }
+    
     /**
      * @notice Sets fuses of a name
      * @param node Namehash of the name
@@ -377,6 +388,7 @@ contract L2NameWrapper is
         operationAllowed(node, CANNOT_BURN_FUSES)
         returns (uint32)
     {
+        // Get the data from the node.
         (address owner, uint32 oldFuses, uint64 expiry) = getData(uint256(node));
 
         // Burn the new fuses into the old fuses. Keep the owner and expiry the same. 
@@ -598,20 +610,27 @@ contract L2NameWrapper is
         uint32 fuses,
         uint64 expiry
     ) public onlyTokenOwner(parentNode) returns (bytes32 node) {
+
+        // Make the node from the label.
         bytes32 labelhash = keccak256(bytes(label));
         node = _makeNode(parentNode, labelhash);
 
-        // Use a block to avoid stack too deep error.
-        {
-            (address nodeOwner, uint32 nodeFuses, uint64 oldExpiry) = getData(uint256(node));
-            (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
+        // Make an instance of the struct to hold the data of the node and parent node.
+        NodeData memory nodeData;
 
-            // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
-            _canCallSetSubnode_WithData(parentFuses, node, nodeOwner, nodeFuses, oldExpiry);
+        // Store the input parameters in the struct, we do this to solve a stack too deep issue. 
+        nodeData.label = label;
+        nodeData.owner = owner;
 
-            // Make sure the expiry is between the old expiry and the parent expiry.
-            expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
-        }        
+        // Get the node and parent node data. 
+        (nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry) = getData(uint256(node));
+        (, nodeData.parentFuses, nodeData.parentExpiry) = getData(uint256(parentNode));
+
+        // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
+        _canCallSetSubnode_WithData(nodeData.parentFuses, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry);
+
+        // Make sure the expiry is between the old expiry and the parent expiry.
+        expiry = _normaliseExpiry(expiry, nodeData.nodeExpiry, nodeData.parentExpiry);
 
         // Checks to make sure the IS_DOT_ETH fuse is not burnt in the fuses. 
         _fusesAreSettable(node, fuses);
@@ -633,7 +652,7 @@ contract L2NameWrapper is
         } else {
 
             // The name is wrapped, so update it.
-            _updateName(parentNode, node, label, owner, fuses, expiry);
+            _updateName(parentNode, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry, nodeData.label, nodeData.owner, fuses, expiry);
         }
 
         // Add an approved address
@@ -670,6 +689,10 @@ contract L2NameWrapper is
 
         // Make an instance of the struct to hold the data of the node and parent node.
         NodeData memory nodeData;
+
+        // Store the input parameters in the struct, we do this to solve a stack too deep issue. 
+        nodeData.label = label;
+        nodeData.owner = owner;
 
         // Get the data from the node and the parent node and save it in the struct. 
         (nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry) = getData(uint256(node));
@@ -718,7 +741,7 @@ contract L2NameWrapper is
             );
 
             // Update the name in the wrapper.
-            _updateName(parentNode, node, label, owner, fuses, expiry);
+            _updateName(parentNode, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry, nodeData.label, nodeData.owner, fuses, expiry);
         }
 
         // Check if there is an approved address and if so add it.
@@ -1061,6 +1084,7 @@ contract L2NameWrapper is
 
         _canFusesBeBurned(node, fuses);
 
+        // Get the data from the node.
         (address oldOwner, , ) = super.getData(uint256(node));
 
         // Check to see if the name was previously owned. 
@@ -1145,23 +1169,22 @@ contract L2NameWrapper is
     function _updateName(
         bytes32 parentNode,
         bytes32 node,
+        address nodeOwner,
+        uint32 nodeFuses,
+        uint64 nodeExpiry,
         string memory label,
         address owner,
         uint32 fuses,
         uint64 expiry
     ) internal {
-        (address oldOwner, uint32 oldFuses, uint64 oldExpiry) = getData(uint256(node));
 
         // If the name is not set, set it.
-        if (names[node].length == 0) {
-            bytes memory name = _addLabel(label, names[parentNode]);
-            names[node] = name;
-        }
+        _saveLabel(parentNode, node, label);
 
         // Set the data of the name. 
-        _setFuses(node, oldOwner, oldFuses | fuses, oldExpiry, expiry);
+        _setFuses(node, nodeOwner, nodeFuses | fuses, nodeExpiry, expiry);
 
-        // Check to see if the owner is being set to the 0 address.
+        // Check to see if the owner is being set to the 0 address, i.e. is being burned.
         if (owner == address(0)) {
 
             // burn the name in both the wrapper and the registry.
@@ -1170,7 +1193,7 @@ contract L2NameWrapper is
         } else {
 
             // The owner is not address(0), so transfer the owner of the name to the new owner. 
-            _transfer(oldOwner, owner, uint256(node), 1, "");
+            _transfer(nodeOwner, owner, uint256(node), 1, "");
         }
     }
 
@@ -1218,6 +1241,8 @@ contract L2NameWrapper is
         uint64 expiry,
         address resolver
     ) private {
+
+        // Create the node from the label.
         bytes32 labelhash = keccak256(bytes(label));
         bytes32 node = _makeNode(ETH_NODE, labelhash);
 
@@ -1226,7 +1251,6 @@ contract L2NameWrapper is
 
         // Save the name.
         names[node] = name;
-
 
         // Wrap the .eth 2LD name in the wrapper, and burn CANNOT_UNWRAP, PARENT_CANNOT_CONTROL and IS_DOT_ETH.
         _wrap(
