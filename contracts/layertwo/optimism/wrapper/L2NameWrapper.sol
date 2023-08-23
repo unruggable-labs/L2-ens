@@ -415,7 +415,7 @@ contract L2NameWrapper is
          */
 
         // If the caller is the parent name make sure it has the permissions to extend the expiry.
-        if (!canModifyName_WithData(msg.sender, parentOwner, parentFuses, parentExpiry) && 
+        if (!_canModifyName_WithData(msg.sender, parentOwner, parentFuses, parentExpiry) && 
 
             /** 
              * If the caller is the approved address of the parent name, allow it to extend the expiry.   
@@ -431,7 +431,7 @@ contract L2NameWrapper is
             !(msg.sender == getApproved(uint256(parentNode)) && !_isETH2LDInGracePeriod(parentFuses, parentExpiry)) &&
 
             // If the caller is the owner of the name make sure CAN_EXTEND_EXPIRY has been burned.
-            !(canModifyName_WithData(msg.sender, owner, fuses, oldExpiry) && fuses & CAN_EXTEND_EXPIRY != 0) &&
+            !(_canModifyName_WithData(msg.sender, owner, fuses, oldExpiry) && fuses & CAN_EXTEND_EXPIRY != 0) &&
 
             /** 
              * If the caller is the approved address of the name, allow it to extend the expiry.
@@ -490,7 +490,7 @@ contract L2NameWrapper is
          * and not a 2LD, e.g. vitalik.eth., in the grace period.
          */
 
-        if (!canModifyName_WithData(msg.sender, owner, fuses, expiry)){
+        if (!_canModifyName_WithData(msg.sender, owner, fuses, expiry)){
             revert Unauthorised(node, msg.sender);
         }
 
@@ -534,19 +534,20 @@ contract L2NameWrapper is
         _fusesAreSettable(node, fuses);
 
         // Get the data from the node.
-        (address owner, uint32 oldFuses, uint64 oldExpiry) = getData(uint256(node));
+        (address nodeOwner, uint32 nodeFuses, uint64 nodeExpiry) = getData(uint256(node));
+
+        // Get the data from the parent node.
+        (address parentOwner, uint32 parentFuses, uint64 parentExpiry) = getData(uint256(parentNode));
 
         // Make sure the name is wrapped.
         if (!_isWrapped(node)) {
             revert NameIsNotWrapped();
         }
 
-        // max expiry is set to the expiry of the parent
-        (, uint32 parentFuses, uint64 maxExpiry) = getData(uint256(parentNode));
 
         // If setting fuses on a TLD, e.g. xyz, make sure the caller is the owner or an authorised caller.
         if (parentNode == ROOT_NODE) {
-            if (!canModifyName(node, msg.sender)) {
+            if (!_canModifyName_WithData(msg.sender, nodeOwner, nodeFuses, nodeExpiry)) {
                 revert Unauthorised(node, msg.sender);
             }
         } else {
@@ -556,25 +557,25 @@ contract L2NameWrapper is
              * owner or an authorised caller of the parent.
              */
 
-            if (!canModifyName(parentNode, msg.sender)) {
+            if (!_canModifyName_WithData(msg.sender, parentOwner, parentFuses, parentExpiry)) {
                 revert Unauthorised(parentNode, msg.sender);
             }
         }
 
         // Make sure the expiry is between the old expiry and the parent expiry.
-        expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
+        expiry = _normaliseExpiry(expiry, nodeExpiry, parentExpiry);
 
         // If we are setting fuses on the name make sure PARENT_CANNOT_CONTROL has not been burned.
-        if (fuses != 0 && oldFuses & PARENT_CANNOT_CONTROL != 0) {
+        if (fuses != 0 && nodeFuses & PARENT_CANNOT_CONTROL != 0) {
 
             revert OperationProhibited(node);
         }
 
         // Burn the new fuses into the old fuses. Keep the owner and expiry the same.
-        fuses |= oldFuses;
+        fuses |= nodeFuses;
 
         // Set the fuses. 
-        _setFuses(node, owner, fuses, oldExpiry, expiry);
+        _setFuses(node, nodeOwner, fuses, nodeExpiry, expiry);
 
     }
 
@@ -930,7 +931,7 @@ contract L2NameWrapper is
      * @return Whether or not the address is the owner or an operator of the name.
      */
 
-    function canModifyName_WithData(
+    function _canModifyName_WithData(
         address addr,
         address owner,
         uint32 fuses,
