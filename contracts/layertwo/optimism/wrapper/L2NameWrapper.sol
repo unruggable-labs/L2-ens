@@ -7,7 +7,7 @@ import {IL2NameWrapper, CANNOT_BURN_NAME, CANNOT_BURN_FUSES, CANNOT_TRANSFER, CA
 import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
@@ -15,16 +15,11 @@ import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 import "forge-std/console.sol";
 
 error Unauthorized(bytes32 node, address addr);
-error IncompatibleParent();
-error IncorrectTokenType();
-error LabelMismatch(bytes32 labelHash, bytes32 expectedLabelhash);
 error LabelTooShort();
 error LabelTooLong(string label);
-error IncorrectTargetOwner(address owner);
 error CannotUpgrade();
 error OperationProhibited(bytes32 node);
 error NameIsNotWrapped();
-error NameIsStillExpired();
 
 contract L2NameWrapper is
     Ownable,
