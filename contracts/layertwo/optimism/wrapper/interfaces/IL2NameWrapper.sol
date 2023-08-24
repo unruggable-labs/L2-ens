@@ -16,12 +16,12 @@ uint32 constant CANNOT_CREATE_SUBDOMAIN = 32;
 uint32 constant CANNOT_APPROVE = 64;
 //uint16 reserved for parent controlled fuses from bit 17 to bit 32
 uint32 constant PARENT_CANNOT_CONTROL = 1 << 16;
-uint32 constant IS_DOT_ETH = 1 << 17;
-uint32 constant CAN_EXTEND_EXPIRY = 1 << 18;
+uint32 constant CAN_EXTEND_EXPIRY = 1 << 17;
+uint32 constant IS_DOT_ETH = 1 << 18;
 uint32 constant CAN_DO_EVERYTHING = 0;
 uint32 constant PARENT_CONTROLLED_FUSES = 0xFFFF0000;
 // all fuses apart from IS_DOT_ETH
-uint32 constant USER_SETTABLE_FUSES = 0x5007F; // 0b00000000000001010000000001111111 
+uint32 constant USER_SETTABLE_FUSES = 0x3007F; // 0b00000000000000110000000001111111 
 
 interface IL2NameWrapper is IERC1155 {
     event NameWrapped(
