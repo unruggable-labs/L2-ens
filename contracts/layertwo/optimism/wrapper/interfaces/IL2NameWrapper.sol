@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "ens-contracts/wrapper/IMetadataService.sol";
 import "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 
+// These are named fuses which can be set by name owners. 
+uint32 constant CAN_DO_EVERYTHING = 0;
 uint32 constant CANNOT_BURN_NAME = 1;
 uint32 constant CANNOT_BURN_FUSES = 2;
 uint32 constant CANNOT_TRANSFER = 4;
@@ -14,13 +16,18 @@ uint32 constant CANNOT_SET_RESOLVER = 8;
 uint32 constant CANNOT_SET_TTL = 16;
 uint32 constant CANNOT_CREATE_SUBDOMAIN = 32;
 uint32 constant CANNOT_APPROVE = 64;
-//uint16 reserved for parent controlled fuses from bit 17 to bit 32
+
+// These are named fuses which can be set by parent name owners on the name.
 uint32 constant PARENT_CANNOT_CONTROL = 1 << 16;
 uint32 constant CAN_EXTEND_EXPIRY = 1 << 17;
+
+// This is a special fuse that is set for .eth names and only used internally. 
 uint32 constant IS_DOT_ETH = 1 << 18;
-uint32 constant CAN_DO_EVERYTHING = 0;
-uint32 constant PARENT_CONTROLLED_FUSES = 0xFFFF0000;
-// all fuses apart from IS_DOT_ETH
+
+// A filter for all the fuses that can be set by the parent name owner.
+uint32 constant PARENT_CONTROLLED_FUSES = 0xFFFF0000; // 0b11111111111111110000000000000000
+
+// A filter for all fuses the fuses that can be set by name owners.
 uint32 constant USER_SETTABLE_FUSES = 0x3007F; // 0b00000000000000110000000001111111 
 
 interface IL2NameWrapper is IERC1155 {
