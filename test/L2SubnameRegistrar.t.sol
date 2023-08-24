@@ -8,7 +8,7 @@ import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
 import {L2PublicResolver} from "optimism/resolvers/L2PublicResolver.sol";
-import {IL2NameWrapper, CANNOT_BURN_NAME} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {INameWrapper} from "ens-contracts/wrapper/INameWrapper.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
@@ -33,6 +33,11 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         0x4f5b812789fc606be1b3b16908db13fc7a9adf7ca72641f84d75b47069d3d7f0;
     bytes32 private constant ROOT_NODE =
         0x0000000000000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant UNRUGGABLE_TLD_NODE = 
+        0xc951937fc733cfe92dd3ea5d53048d4f39082c7e84dfc0501b03d5e2dd672d5d;
+    bytes32 private constant UNRUGGABLE_TLD_LABELHASH = 
+        0x0fb49d3befd591078ec044334b6cad68f02609749d39e161fa1ff9bf6ce96d8c;
+
     string MAINNET_RPC_URL = "https://eth-mainnet.g.alchemy.com/v2/_YutYRi0sYLsh44jlBvM7QgDOcK-JhtY";
     uint64 twoYears = 63072000; // aprox. 2 years
     uint64 oneYear = 31536000; // A year in seconds.
@@ -85,11 +90,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         ens.setSubnodeOwner(ROOT_NODE, ETH_LABELHASH, address(nameWrapper));
         assertEq(ens.owner(ETH_NODE), address(nameWrapper));
 
-        // Approve the name wrapper as a controller of the ENS registry.
-        // ens.setApprovalForAll(address(nameWrapper), true); // @audit - this is not needed.
-
         // Deploy the public resolver.
-        //@audit - for some reason this doesn't work when I removed the reverse registrar.
         publicResolver = new L2PublicResolver(ens, nameWrapper, address(0));
 
         // Deploy the Subname Registrar.
@@ -101,8 +102,32 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             usdOracle
         );
 
-        // Allow the "account" to register names in the name wrapper.
+        // Allow "account" to register names in the name wrapper.
         nameWrapper.setController(account, true);
+
+        /**
+         * Set up the .unruggable TLD in the ENS registry. The .unruggable TLD is a special TLD that
+         * we use to be able to assign anyone a random second level name, which can be used to issue subnamees.
+         * The .unruggable TLD is owned by the caller and the caller can approve the subname registrar to
+         * register subnames under the .unruggable TLD.
+         */
+        ens.setSubnodeOwner(ROOT_NODE, UNRUGGABLE_TLD_LABELHASH, account);
+        assertEq(ens.owner(UNRUGGABLE_TLD_NODE), account);
+
+        // Approve the NameWrapper to register subnames under the .unruggable TLD.
+        ens.setApprovalForAll(address(nameWrapper), true);
+
+        // Wrap the .unruggable TLD in the NameWrapper.
+        nameWrapper.wrapTLD(
+            bytes("\x0aunruggable\x00"), 
+            account, 
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME, 
+            uint64(type(uint64).max)
+        );
+
+        // Make sure we are the owner of .unruggable TLD in the NameWrapper.
+        assertEq(nameWrapper.ownerOf(uint256(UNRUGGABLE_TLD_NODE)), account);
+
 
         // Register a 2LD .eth name in the NameWrapper
         nameWrapper.registerAndWrapEth2LD(
@@ -117,8 +142,15 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         // Revoke the approval for "account".
         nameWrapper.setController(account, false);
 
-        // In order to register subnames using the L2 subname wrapper, the owner of the 
-        // parent name "account" needs to approve all for the subname wrapper in the name wrapper.  
+        // Revoke the approval for "account" in the ENS registry.
+        ens.setApprovalForAll(address(nameWrapper), false);
+
+        /**
+         * In order to register subnames of abc.eth and the .unruggable TLD, 
+         * which are both owned by "account" in the NameWrapper,
+         * we need to approve all for subname registrar.
+         */
+
         nameWrapper.setApprovalForAll(address(subnameRegistrar), true);
     }
 
@@ -187,6 +219,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         return bytes("\x03xyz\x03abc\x03eth\x00").namehash(0);
 
     }
+
     // Create a Subheading using an empty function.
     function test1000_________________________________________________________________________() public {}
     function test2000_______________________L2_SUBNAME_REGISTRAR_FUNCTIONS____________________() public {}
@@ -738,6 +771,13 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         vm.stopPrank();
         vm.startPrank(account);
 
+    }
+    function test_016____registerUnruggable__________RegisterADotUnruggableName() public{
+
+        bytes32 node = subnameRegistrar.registerUnruggable(account, 3, 12, 57654674567);
+
+        // Check to make sure the subname is owned account2 in the Name Wrapper.
+        assertEq(nameWrapper.ownerOf(uint256(node)), account);
     }
 
 }
