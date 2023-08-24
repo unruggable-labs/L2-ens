@@ -565,51 +565,36 @@ contract L2SubnameRegistrar is
     }
 
 
-        function getRandomName(
-        uint256 maxLoops, 
-        uint256 _minNumbers, 
-        uint256 _minLetters, 
-        uint256 _numChars,
-        uint256 _salt
-    ) 
-        public view returns (bytes32) {
-        // Generate the random name using only [a-z0-9] or [0x61-0x7a, 0x30-0x39]
+    function getRandomName(
+    uint256 maxLoops, 
+    uint256 _numChars,
+    uint256 _salt
+) 
+    public view returns (bytes memory) {
+    require(_numChars > 0, "Number of characters must be greater than 0");
 
-        // Try to find a name at most maxLoops times.
-        for (uint256 count = 0; count < maxLoops; count++) {
+    bytes memory randomName = new bytes(_numChars);
 
-            bytes32 randomName;
+    uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, _salt)));
 
-            uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, count, _salt)));
+    for (uint256 count = 0; count < maxLoops; count++) {
+        for (uint256 i = 0; i < _numChars; i++) {
+            uint8 randomDigit = uint8(randomNumber % 10); // Extract the last digit
 
-            for (uint256 i = 0; i < _numChars; i++) {
-                if (randomNumber % 2 == 0) {
-                    // The first character will be a number
-                    randomName = randomName | (bytes32(bytes1(uint8(48 + (randomNumber % 10)))) >> (i * 8));
-                    randomNumber = randomNumber >> 8;
-                } else {
-                    // The first character will be a letter
-                    randomName = randomName | (bytes32(bytes1(uint8(97 + (randomNumber % 26)))) >> (i * 8));
-                    randomNumber = randomNumber >> 8;
-                }
+            // Convert the digit to UTF-8 bytes
+            randomName[i] = bytes1(uint8(0x30) + randomDigit);
 
-                randomNumber = randomNumber >> 8;
-            }
-
-            //(bool isNormal, ) = randomName.isNormalized(_minNumbers, _minLetters, 1);
-
-            //bytes normalizedName = abi.encodePacked(uint8(bytes(label).length), randomName, bytes("\x0aunruggable\x00"));
-
-            //check if the name is available
-            if (available(randomName)) {
-                return randomName;
-            }
+            // Shift the random number to remove the last digit
+            randomNumber /= 10;
         }
-        // If we can't find a name, revert.
-        revert NoNameFoundAfterNAttempts(maxLoops);
+
+        if (available(randomName)) {
+            return randomName;
+        }
     }
 
-
+    revert("Unable to generate an available name");
+}
 
     /**
     * @dev Converts USD to Wei. 
