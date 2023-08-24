@@ -3,7 +3,7 @@ pragma solidity ~0.8.17;
 
 import {ERC1155Fuse, IERC1155MetadataURI} from "ens-contracts/wrapper/ERC1155Fuse.sol";
 import {Controllable} from "ens-contracts/wrapper/Controllable.sol";
-import {IL2NameWrapper, CANNOT_UNWRAP, CANNOT_BURN_FUSES, CANNOT_TRANSFER, CANNOT_SET_RESOLVER, CANNOT_SET_TTL, CANNOT_CREATE_SUBDOMAIN, CANNOT_APPROVE, PARENT_CANNOT_CONTROL, CAN_DO_EVERYTHING, IS_DOT_ETH, CAN_EXTEND_EXPIRY, PARENT_CONTROLLED_FUSES, USER_SETTABLE_FUSES} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper, CANNOT_BURN_NAME, CANNOT_BURN_FUSES, CANNOT_TRANSFER, CANNOT_SET_RESOLVER, CANNOT_SET_TTL, CANNOT_CREATE_SUBDOMAIN, CANNOT_APPROVE, PARENT_CANNOT_CONTROL, CAN_DO_EVERYTHING, IS_DOT_ETH, CAN_EXTEND_EXPIRY, PARENT_CONTROLLED_FUSES, USER_SETTABLE_FUSES} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
@@ -83,17 +83,17 @@ contract L2NameWrapper is
         ens = _ens;
         metadataService = _metadataService;
 
-        // Burn PARENT_CANNOT_CONTROL and CANNOT_UNWRAP fuses for ROOT_NODE and ETH_NODE and set expiry to max.
+        // Burn PARENT_CANNOT_CONTROL and CANNOT_BURN_NAME fuses for ROOT_NODE and ETH_NODE and set expiry to max.
         _setData(
             uint256(ETH_NODE),
             address(0),
-            uint32(PARENT_CANNOT_CONTROL | CANNOT_UNWRAP),
+            uint32(PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME),
             MAX_EXPIRY
         );
         _setData(
             uint256(ROOT_NODE),
             address(0),
-            uint32(PARENT_CANNOT_CONTROL | CANNOT_UNWRAP),
+            uint32(PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME),
             MAX_EXPIRY
         );
 
@@ -1079,7 +1079,7 @@ contract L2NameWrapper is
 
         /** 
          * Check to make sure if an owner controlled fuse is being burned,
-         * also PARENT_CANNOT_CONTROL and CANNOT_UNWRAP are being burned.
+         * also PARENT_CANNOT_CONTROL and CANNOT_BURN_NAME are being burned.
          */
 
         _canFusesBeBurned(node, fuses);
@@ -1252,12 +1252,12 @@ contract L2NameWrapper is
         // Save the name.
         names[node] = name;
 
-        // Wrap the .eth 2LD name in the wrapper, and burn CANNOT_UNWRAP, PARENT_CANNOT_CONTROL and IS_DOT_ETH.
+        // Wrap the .eth 2LD name in the wrapper, and burn CANNOT_BURN_NAME , PARENT_CANNOT_CONTROL and IS_DOT_ETH.
         _wrap(
             node,
             name,
             wrappedOwner,
-            fuses | CANNOT_UNWRAP | PARENT_CANNOT_CONTROL | IS_DOT_ETH,
+            fuses | CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL | IS_DOT_ETH,
             expiry
         );
 
@@ -1279,8 +1279,8 @@ contract L2NameWrapper is
 
     function _burnAll(bytes32 node) private {
 
-        // Check to see if CANNOT_UNWRAP is burned.
-        if (allFusesBurned(node, CANNOT_UNWRAP)) {
+        // Check to see if CANNOT_BURN_NAME is burned.
+        if (allFusesBurned(node, CANNOT_BURN_NAME)) {
             revert OperationProhibited(node);
         }
 
@@ -1337,7 +1337,7 @@ contract L2NameWrapper is
 
         /** 
          * Check to make sure if an owner controlled fuse is being burned,
-         * also PARENT_CANNOT_CONTROL and CANNOT_UNWRAP are being burned.
+         * also PARENT_CANNOT_CONTROL and CANNOT_BURN_NAME are being burned.
          */
 
         _canFusesBeBurned(node, fuses);

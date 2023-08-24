@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "ens-contracts/wrapper/IMetadataService.sol";
 import "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 
-uint32 constant CANNOT_UNWRAP = 1;
+uint32 constant CANNOT_BURN_NAME = 1;
 uint32 constant CANNOT_BURN_FUSES = 2;
 uint32 constant CANNOT_TRANSFER = 4;
 uint32 constant CANNOT_SET_RESOLVER = 8;

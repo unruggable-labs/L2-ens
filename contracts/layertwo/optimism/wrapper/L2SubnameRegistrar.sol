@@ -7,7 +7,7 @@ import {ENS} from "ens-contracts/registry/ENS.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
-import {IL2NameWrapper, CANNOT_UNWRAP, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
 import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
@@ -235,9 +235,9 @@ contract L2SubnameRegistrar is
         }
 
         // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
+        // Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
+            !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
         }
 
@@ -262,9 +262,9 @@ contract L2SubnameRegistrar is
     ) public {
 
         // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
+        // Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
+            !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
         }
 
@@ -298,9 +298,9 @@ contract L2SubnameRegistrar is
     ) public {
 
         // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
+        // Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
+            !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
         }
 
@@ -323,9 +323,9 @@ contract L2SubnameRegistrar is
         uint256 charAmount
     ) public {
 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
+        // Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
+            !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
         }
 
@@ -351,9 +351,9 @@ contract L2SubnameRegistrar is
     ) public {
 
         // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
+        // Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
+            !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
         }
 
@@ -543,7 +543,7 @@ contract L2SubnameRegistrar is
                 address(pricingData[parentNode].renewalController), 
                 resolver,
                 0, // TTL
-                fuses | CANNOT_UNWRAP | PARENT_CANNOT_CONTROL,
+                fuses | CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL,
                 expiry
             );
         }
