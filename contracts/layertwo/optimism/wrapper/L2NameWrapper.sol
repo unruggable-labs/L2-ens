@@ -423,7 +423,7 @@ contract L2NameWrapper is
         bytes32 node = _makeNode(parentNode, labelhash);
 
         // Make sure the name is wrapped.
-        if (!_isWrapped(node)) {
+        if (ownerOf(uint256(node)) == address(0)) {
             revert NameIsNotWrapped();
         }
 
@@ -498,8 +498,11 @@ contract L2NameWrapper is
      */
 
     function upgrade(bytes calldata name, bytes calldata extraData) public {
+
+        // Make the node from the name.
         bytes32 node = name.namehash(0);
 
+        // Get the data from the node. 
         (address owner, uint32 fuses, uint64 expiry) = getData(uint256(node));
 
         // Make sure the upgrade contract is set.
@@ -562,10 +565,9 @@ contract L2NameWrapper is
         (address parentOwner, uint32 parentFuses, uint64 parentExpiry) = getData(uint256(parentNode));
 
         // Make sure the name is wrapped.
-        if (!_isWrapped(node)) {
+        if (ownerOf(uint256(node)) == address(0)) {
             revert NameIsNotWrapped();
         }
-
 
         // If setting fuses on a TLD, e.g. xyz, make sure the caller is the owner or an authorised caller.
         if (parentNode == ROOT_NODE) {
@@ -649,7 +651,7 @@ contract L2NameWrapper is
         bytes memory name = _saveLabel(parentNode, node, label);
 
         // Check to see if the name is wrapped.
-         if (!_isWrapped(node)) {
+         if (ownerOf(uint256(node)) == address(0)) {
 
             // The name is NOT wrapped.
 
@@ -721,7 +723,7 @@ contract L2NameWrapper is
         bytes memory name = _saveLabel(parentNode, node, label);
 
         // Check to see if the name is wrapped.
-        if (!_isWrapped(node)) {
+        if (ownerOf(uint256(node)) == address(0)) {
             
             // The name is NOT wrappped. 
 
@@ -1388,18 +1390,6 @@ contract L2NameWrapper is
         if (fuses | USER_SETTABLE_FUSES != USER_SETTABLE_FUSES) {
             revert OperationProhibited(node);
         }
-    }
-
-    /**
-     * @notice Checks to see if the name is wrapped.
-     * @dev It is not possible to unwrap names with the L2NameWrapper, so we can simply check
-     *      to see if the owner of the name is the owner in the L2NameWrapper contract here. 
-     * @param node The namehash of the name.
-     */    
-
-    function _isWrapped(bytes32 node) internal view returns (bool) {
-        return
-            ownerOf(uint256(node)) != address(0); 
     }
 
     /**
