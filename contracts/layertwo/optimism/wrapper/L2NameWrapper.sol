@@ -328,7 +328,7 @@ contract L2NameWrapper is
         bytes32 node = _makeNode(ETH_NODE, labelhash);
 
         // Make sure the .eth 2LD is available for registration.
-        if (ens.owner(node) != address(0)) {
+        if (ownerOf(uint256(node)) != address(0)) {
             revert OperationProhibited(node);
         }
 
@@ -361,18 +361,22 @@ contract L2NameWrapper is
         bytes32 labelhash,
         uint256 duration
     ) external onlyController returns (uint64 expiry) {
+
+        // Make the node from the labelhash.
         bytes32 node = _makeNode(ETH_NODE, labelhash);
 
-        if (!_isWrapped(node)) {
+        // Make sure the name is wrapped before renewing it.
+        if (ownerOf(uint256(node)) == address(0)) {
             revert NameIsNotWrapped();
         }
 
-        // get the owner fuses and expiry of the node
+        // Get the owner fuses and expiry of the node.
         (address owner, uint32 fuses, uint64 oldExpiry) = getData(uint256(node));
 
         // Set expiry in Wrapper
         expiry = uint64(oldExpiry + duration);
 
+        // Set the data in the wrapper.
         _setData(node, owner, fuses, expiry);
 
         return expiry;
