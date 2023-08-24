@@ -312,6 +312,32 @@ contract L2NameWrapper is
     }
 
     /**
+     * @notice Wrap a new TLD, e.g. .xyz 
+     * @dev Only callable by authorized controllers.
+     * @param tldNode The parent namehash of the name, e.g. vitalik.xyz would be namehash('xyz').
+     * @param owner The owner of the name.
+     * @param fuses Initial fuses to set on the name.
+     * @param expiry The expiry date of the name, in seconds since the Unix epoch.
+     */
+
+    function wrapTLD(
+        bytes32 tldNode,
+        address owner,
+        uint32 fuses,
+        uint64 expiry
+    ) public onlyController {
+            
+            // Make sure the name is not already wrapped.
+            if (ownerOf(uint256(tldNode)) != address(0)) {
+                revert OperationProhibited(tldNode);
+            }
+
+            // Set the data in the wrapper.
+            _setData(tldNode, owner, fuses, expiry);
+        }
+    }
+
+    /**
      * @dev Registers a new .eth second-level domain and wraps it.
      *      Only callable by authorized controllers.
      * @param label The label to register (Eg, 'foo' for 'foo.eth').
@@ -1320,7 +1346,7 @@ contract L2NameWrapper is
     ) internal {
 
         /** 
-         * Check to make sure if an owner controlled fuse is being burned,
+         * Check to make sure if any fuse is being burned,
          * also PARENT_CANNOT_CONTROL and CANNOT_BURN_NAME are being burned.
          */
 
