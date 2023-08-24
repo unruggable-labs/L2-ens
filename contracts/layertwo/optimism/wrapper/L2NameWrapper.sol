@@ -325,6 +325,12 @@ contract L2NameWrapper is
 
         // Create a labelhash from the label.
         bytes32 labelhash = keccak256(bytes(label));
+        bytes32 node = _makeNode(ETH_NODE, labelhash);
+
+        // Make sure the .eth 2LD is available for registration.
+        if (ens.owner(node) != address(0)) {
+            revert OperationProhibited(node);
+        }
 
         // Save the subname in the registry.
         ens.setSubnodeRecord(ETH_NODE, labelhash, address(this), address(0), 0);
@@ -1078,8 +1084,8 @@ contract L2NameWrapper is
     ) internal override {
 
         /** 
-         * Check to make sure if an owner controlled fuse is being burned,
-         * also PARENT_CANNOT_CONTROL and CANNOT_BURN_NAME are being burned.
+         * Check to make sure if an fuses are being burned,
+         * also PARENT_CANNOT_CONTROL is being burned.
          */
 
         _canFusesBeBurned(node, fuses);
