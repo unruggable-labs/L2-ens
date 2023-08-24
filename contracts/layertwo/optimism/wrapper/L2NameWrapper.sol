@@ -74,17 +74,13 @@ contract L2NameWrapper is
         IMetadataService _metadataService
     ) {
 
-        // Setup the registry and metadata service.
+        // Set the registry.
         ens = _ens;
+
+        // Set the metadata service.
         metadataService = _metadataService;
 
-        // Burn PARENT_CANNOT_CONTROL and CANNOT_BURN_NAME fuses for ROOT_NODE and ETH_NODE and set expiry to max.
-        _setData(
-            uint256(ETH_NODE),
-            address(0),
-            uint32(PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME),
-            MAX_EXPIRY
-        );
+        // Add the root node to the wrapper.
         _setData(
             uint256(ROOT_NODE),
             address(0),
@@ -92,8 +88,24 @@ contract L2NameWrapper is
             MAX_EXPIRY
         );
 
-        // Set the names of both the root and eth node.
+        /**
+         * Add the ETH node to the wrapper. The ETH node is owned by address 0, however, 
+         * it is still possible to register second level names, i.e. Vitalik.eth, 
+         * because the L2NameWrapper is controllable and registerAndWrapEth2LD and renewEth2LD
+         * are special functions used for registering and renewing .eth 2LDs. 
+         */
+
+        _setData(
+            uint256(ETH_NODE),
+            address(0),
+            uint32(PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME),
+            MAX_EXPIRY
+        );
+
+        // Set the name of the root node.
         names[ROOT_NODE] = "\x00";
+
+        // Set the name of the ETH node.
         names[ETH_NODE] = "\x03eth\x00";
     }
 
