@@ -314,27 +314,36 @@ contract L2NameWrapper is
     /**
      * @notice Wrap a new TLD, e.g. .xyz 
      * @dev Only callable by authorized controllers.
-     * @param tldNode The parent namehash of the name, e.g. vitalik.xyz would be namehash('xyz').
-     * @param owner The owner of the name.
+     * @param name The name of the TLD, e.g. vitalik.xyz would be "xyz".
+     * @param wrappedOwner The owner of the name.
      * @param fuses Initial fuses to set on the name.
      * @param expiry The expiry date of the name, in seconds since the Unix epoch.
      */
 
     function wrapTLD(
-        bytes32 tldNode,
-        address owner,
+        bytes calldata name,
+        address wrappedOwner,
         uint32 fuses,
         uint64 expiry
-    ) public onlyController {
-            
-            // Make sure the name is not already wrapped.
-            if (ownerOf(uint256(tldNode)) != address(0)) {
-                revert OperationProhibited(tldNode);
-            }
+    ) public {
+        (bytes32 labelhash,) = name.readLabel(0);
+        bytes32 node = _makeNode(ROOT_NODE, labelhash);
 
-            // Set the data in the wrapper.
-            _setData(tldNode, owner, fuses, expiry);
+        names[node] = name;
+            
+        // Get the owner in the ens registry.
+        address owner = ens.owner(node);
+
+        // Check to make sure the caller is the owner or an authorized caller.
+        if (owner != msg.sender && !ens.isApprovedForAll(owner, msg.sender)) {
+            revert Unauthorized(node, msg.sender);
         }
+
+        // Set the owner of the name in the registry to the wrapper.
+        ens.setOwner(node, address(this));
+        
+        // Set the data in the wrapper.
+        _wrap(node, name, wrappedOwner, fuses, expiry);
     }
 
     /**
