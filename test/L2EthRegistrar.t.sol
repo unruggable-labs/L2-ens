@@ -9,7 +9,7 @@ import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
 import {L2PublicResolver} from "optimism/resolvers/L2PublicResolver.sol";
 import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
-import {INameWrapper, CANNOT_UNWRAP} from "ens-contracts/wrapper/INameWrapper.sol";
+import {INameWrapper} from "ens-contracts/wrapper/INameWrapper.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";

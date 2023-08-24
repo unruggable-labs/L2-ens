@@ -8,7 +8,7 @@ import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
 import {L2PublicResolver} from "optimism/resolvers/L2PublicResolver.sol";
-import {IL2NameWrapper, CANNOT_UNWRAP} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper, CANNOT_BURN_NAME} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {INameWrapper} from "ens-contracts/wrapper/INameWrapper.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
@@ -111,7 +111,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             address(0), //no approved contract
             twoYears,
             address(publicResolver),
-            uint16(CANNOT_UNWRAP)
+            uint16(CANNOT_BURN_NAME)
         );
 
         // Revoke the approval for "account".

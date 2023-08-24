@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
-import {IL2NameWrapper, CANNOT_SET_TTL, CANNOT_SET_RESOLVER, CAN_EXTEND_EXPIRY, CANNOT_UNWRAP, PARENT_CANNOT_CONTROL} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper, CANNOT_SET_TTL, CANNOT_SET_RESOLVER, CAN_EXTEND_EXPIRY, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 import {L2UpgradedNameWrapperMock} from "optimism/wrapper/mocks/L2UpgradedNameWrapperMock.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
@@ -125,7 +125,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
             _approved,
             publicResolver, 
             0, //TTL
-            CANNOT_UNWRAP | PARENT_CANNOT_CONTROL, 
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL, 
             uint64(block.timestamp) + oneYear 
         );
         
@@ -222,7 +222,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
             address(0), // no approved account
             publicResolver, 
             0, //TTL
-            CANNOT_UNWRAP | PARENT_CANNOT_CONTROL, 
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL, 
             uint64(block.timestamp) + oneYear 
         );
 
@@ -252,7 +252,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
             account2, 
             publicResolver, 
             0, //TTL
-            CANNOT_UNWRAP | PARENT_CANNOT_CONTROL, 
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL, 
             uint64(block.timestamp) + oneYear 
         );
 
@@ -286,7 +286,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
             account2, 
             publicResolver, 
             0, //TTL
-            CANNOT_UNWRAP | PARENT_CANNOT_CONTROL, 
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL, 
             uint64(block.timestamp) + oneYear 
         );
 
@@ -332,7 +332,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
             address(0), 
             publicResolver, 
             0, //TTL
-            CANNOT_UNWRAP | PARENT_CANNOT_CONTROL, 
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL, 
             uint64(block.timestamp) + oneYear 
         );
 
@@ -364,7 +364,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
             accountReferrer, // set the accountReferrer as the approved contract. 
             publicResolver, 
             0, //TTL
-            CANNOT_UNWRAP | PARENT_CANNOT_CONTROL, 
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL, 
             uint64(block.timestamp) + oneYear 
         );
 
@@ -410,7 +410,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
         emit NameUpgraded(
             "\x03sub\x03abc\x03eth\x00",
             address(nameWrapper),
-            CANNOT_UNWRAP | PARENT_CANNOT_CONTROL | CANNOT_SET_RESOLVER,
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL | CANNOT_SET_RESOLVER,
             uint64(block.timestamp) + oneYear,
             address(0),
             bytes("")
@@ -436,7 +436,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
         // Check to make sure the fueses are set correctly.
         ( , uint32 fuses, ) = nameWrapper.getData(uint256(node));
 
-        assertEq(fuses, CANNOT_SET_TTL | CANNOT_UNWRAP | PARENT_CANNOT_CONTROL);
+        assertEq(fuses, CANNOT_SET_TTL | CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL);
 
     }
 
@@ -563,7 +563,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
 
         // make sure owner, fuses and expiry are correct
         assertEq(owner2, account);
-        assertEq(fuses, uint32(CANNOT_UNWRAP | PARENT_CANNOT_CONTROL));
+        assertEq(fuses, uint32(CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL));
         assertEq(expiry, uint64(block.timestamp) + oneYear);
     }
 
