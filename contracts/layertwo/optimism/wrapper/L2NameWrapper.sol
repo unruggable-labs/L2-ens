@@ -800,23 +800,20 @@ contract L2NameWrapper is
         // Set the record in the registry.
         ens.setRecord(node, address(this), resolver, ttl);
 
-        // Check to see if the owner is being set to the 0 address, i.e. is being burned. 
+        // Check to see if the name is being burned. 
         if (owner == address(0)) {
+
+            // The name is being burned.
 
             // Get the data of the name.
             (, uint32 fuses, ) = getData(uint256(node));
-
-            // Check to make sure the name is NOT a .eth 2LD, e.g. vitalik.eth.
-            if (fuses & IS_DOT_ETH == IS_DOT_ETH) { //@audit - We could take this out. 
-                revert IncorrectTargetOwner(owner);
-            }
 
             // Burn the name both in the wrapper and the registry.
             _burnAll(node);
 
         } else {
 
-            // The name is NOT being set to the 0 address.
+            // The name is NOT being burned.
 
             // Get the current owner of the name. 
             address oldOwner = ownerOf(uint256(node));
