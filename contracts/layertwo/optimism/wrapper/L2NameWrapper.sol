@@ -14,7 +14,7 @@ import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 //import foundry console logging.
 import "forge-std/console.sol";
 
-error Unauthorised(bytes32 node, address addr);
+error Unauthorized(bytes32 node, address addr);
 error IncompatibleParent();
 error IncorrectTokenType();
 error LabelMismatch(bytes32 labelHash, bytes32 expectedLabelhash);
@@ -210,7 +210,7 @@ contract L2NameWrapper is
 
             /** 
              * If the name is emancipated, set the owner to 0.
-             * This is necessary so that expired emanciapted names cannot be transferred,
+             * This is necessary so that expired emancipated names cannot be transferred,
              * which could include selling an expired name in a marketplace.
              */
 
@@ -275,7 +275,7 @@ contract L2NameWrapper is
 
     modifier onlyTokenOwner(bytes32 node) {
         if (!canModifyName(node, msg.sender)) {
-            revert Unauthorised(node, msg.sender);
+            revert Unauthorized(node, msg.sender);
         }
 
         _;
@@ -306,7 +306,7 @@ contract L2NameWrapper is
 
     /**
      * @dev Registers a new .eth second-level domain and wraps it.
-     *      Only callable by authorised controllers.
+     *      Only callable by authorized controllers.
      * @param label The label to register (Eg, 'foo' for 'foo.eth').
      * @param wrappedOwner The owner of the wrapped name.
      * @param approved The address to approve for the name.
@@ -353,7 +353,7 @@ contract L2NameWrapper is
 
     /**
      * @notice Renews a .eth second-level domain.
-     * @dev Only callable by authorised controllers.
+     * @dev Only callable by authorized controllers.
      * @param labelhash The hash of the label to register (eg, `keccak256('foo')`, for 'foo.eth').
      * @param duration The number of seconds to renew the name for.
      * @return expiry The expiry date of the name, in seconds since the Unix epoch.
@@ -411,7 +411,7 @@ contract L2NameWrapper is
 
     /**
      * @notice A function to extend the expiry of a name.
-     * @param parentNode The parrent namehash of the name, e.g. vitalik.xyz would be namehash('xyz').
+     * @param parentNode The parent namehash of the name, e.g. vitalik.xyz would be namehash('xyz').
      * @param labelhash The labelhash of the name, e.g. vitalik.xyz would be keccak256('vitalik').
      * @param expiry The time when the name will expire in seconds since the Unix epoch.
      * @return The new expiry.
@@ -445,11 +445,11 @@ contract L2NameWrapper is
 
             /** 
              * If the caller is the approved address of the parent name, allow it to extend the expiry.   
-             * This allows for parent level renewal controllers to be assigned to renew names on bahalf
+             * This allows for parent level renewal controllers to be assigned to renew names on behalf
              * of parent name owners. Parent level renewal controllers can be used in combination with 
              * a registrar to create a system for renting subnames. A single parent level renewal controller
-             * can be for situations where the policies for subname rentals are mostly uniform, for exmaple in
-             * the case of a domain registration system where subnames are all subnames can be renwed for a 
+             * can be for situations where the policies for subname rentals are mostly uniform, for example in
+             * the case of a domain registration system where subnames are all subnames can be renewed for a 
              * flat fee, such as $5 per year. Also we check to make sure the parent level name is not in the
              * in the grace period. 
              */
@@ -462,20 +462,20 @@ contract L2NameWrapper is
             /** 
              * If the caller is the approved address of the name, allow it to extend the expiry.
              * This ability was introduced into this contract in order to allow for subname level
-             * renewall controllers. Previously it was only possible to allow for parent level renewal
+             * renewal controllers. Previously it was only possible to allow for parent level renewal
              * controllers. Subname level renewal controllers are more flexible, allowing a different 
              * renewal controller to be used for each subname. Another significan advantage is that
              * it is not necessary to buren CANNOT_APPROVE on the parent level name, and instead
              * CANNOT_APPROVE can be burned on the subname level name. This is important because 
              * burning a permanent fuse on the parent level name cannot be undone, and is likely to
-             * reduce the utilty and value of the parent level name, as well as potentially lock the
+             * reduce the utility and value of the parent level name, as well as potentially lock the
              * parent level name into a particular technology, which can't be upgraded in the future.  
              */
 
             !(msg.sender == getApproved(uint256(node)))) {
 
             //If the caller is none of these then revert.
-            revert Unauthorised(node, msg.sender);
+            revert Unauthorized(node, msg.sender);
         }
 
         // The max expiry is set to the expiry of the parent.
@@ -484,7 +484,7 @@ contract L2NameWrapper is
         // Make sure the expiry is between the old expiry and the parent expiry.
         expiry = _normaliseExpiry(expiry, oldExpiry, maxExpiry);
 
-        // Set the owner, fues and expiry of the name.
+        // Set the owner, fuses and expiry of the name.
         _setData(node, owner, fuses, expiry);
 
         emit ExpiryExtended(node, expiry);
@@ -496,7 +496,7 @@ contract L2NameWrapper is
     /**
      * @notice Upgrades a domain of any kind. Could be a .eth name vitalik.eth, 
      *         a DNSSEC name vitalik.xyz, or a subdomain.
-     * @dev Can be called by the owner or an authorised caller
+     * @dev Can be called by the owner or an authorized caller
      * @param name The name to upgrade, in DNS format
      * @param extraData Extra data to pass to the upgrade contract
      */
@@ -515,12 +515,12 @@ contract L2NameWrapper is
         }
 
         /**
-         * Make sure the caller is the owner or an authorised caller, 
+         * Make sure the caller is the owner or an authorized caller, 
          * and not a 2LD, e.g. vitalik.eth., in the grace period.
          */
 
         if (!_canModifyName_WithData(msg.sender, owner, fuses, expiry)){
-            revert Unauthorised(node, msg.sender);
+            revert Unauthorized(node, msg.sender);
         }
 
         // Get the approved address.
@@ -575,14 +575,14 @@ contract L2NameWrapper is
             revert NameIsNotWrapped();
         }
 
-        // If setting fuses on a TLD, e.g. xyz, make sure the caller is the owner or an authorised caller.
+        // If setting fuses on a TLD, e.g. xyz, make sure the caller is the owner or an authorized caller.
         if (parentNode == ROOT_NODE) {
 
             // The name is a TLD. 
 
-            // Make sure the caller is the owner or an authorised caller.
+            // Make sure the caller is the owner or an authorized caller.
             if (!_canModifyName_WithData(msg.sender, nodeOwner, nodeFuses, nodeExpiry)) {
-                revert Unauthorised(node, msg.sender);
+                revert Unauthorized(node, msg.sender);
             }
         } else {
 
@@ -590,11 +590,11 @@ contract L2NameWrapper is
 
             /** 
              * If setting fuses on a subdomain, make sure the caller is the 
-             * owner or an authorised caller of the parent.
+             * owner or an authorized caller of the parent.
              */
 
             if (!_canModifyName_WithData(msg.sender, parentOwner, parentFuses, parentExpiry)) {
-                revert Unauthorised(parentNode, msg.sender);
+                revert Unauthorized(parentNode, msg.sender);
             }
         }
 
@@ -650,13 +650,13 @@ contract L2NameWrapper is
         (nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry) = getData(uint256(node));
         (, nodeData.parentFuses, nodeData.parentExpiry) = getData(uint256(parentNode));
 
-        // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
+        // Checks the parent to make sure it has the permissions it needs to create or update a subdomain. 
         _canCallSetSubnode_WithData(nodeData.parentFuses, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry);
 
         // Make sure the expiry is between the old expiry and the parent expiry.
         expiry = _normaliseExpiry(expiry, nodeData.nodeExpiry, nodeData.parentExpiry);
 
-        // Checks to make sure the IS_DOT_ETH fuse is not burnt in the fuses. 
+        // Checks to make sure the IS_DOT_ETH fuse is not burned in the fuses. 
         _fusesAreSettable(node, fuses);
 
         // If the name has not been set before, save the label.
@@ -713,7 +713,7 @@ contract L2NameWrapper is
         bytes32 labelhash = keccak256(bytes(label));
         node = _makeNode(parentNode, labelhash);
 
-        // Make an instance of the struct to hold input paramenters, the data of the node and parent node.
+        // Make an instance of the struct to hold input parameters, the data of the node and parent node.
         NodeData memory nodeData;
 
         // Store the input parameters in the struct, we do this to solve a stack too deep issue. 
@@ -724,13 +724,13 @@ contract L2NameWrapper is
         (nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry) = getData(uint256(node));
         (nodeData.parentOwner, nodeData.parentFuses, nodeData.parentExpiry) = getData(uint256(parentNode));
 
-        // Cecks the parent to make sure it has the persmissions it needs to create or update a subdomain. 
+        // Checks the parent to make sure it has the permissions it needs to create or update a subdomain. 
         _canCallSetSubnode_WithData(nodeData.parentFuses, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry);
 
         // Make sure the expiry is between the old expiry and the parent expiry.
         expiry = _normaliseExpiry(expiry, nodeData.nodeExpiry, nodeData.parentExpiry);
 
-        // Checks to make sure the IS_DOT_ETH fuse is not burnt in the fuses. 
+        // Checks to make sure the IS_DOT_ETH fuse is not burned in the fuses. 
         _fusesAreSettable(node, fuses);
 
         // If the name has not been set before, save the label.
@@ -739,7 +739,7 @@ contract L2NameWrapper is
         // Check to see if the name is wrapped.
         if (ownerOf(uint256(node)) == address(0)) {
             
-            // The name is NOT wrappped. 
+            // The name is NOT wrapped. 
 
             // Set the subnode record in the registry.
             ens.setSubnodeRecord(
@@ -805,9 +805,6 @@ contract L2NameWrapper is
 
             // The name is being burned.
 
-            // Get the data of the name.
-            (, uint32 fuses, ) = getData(uint256(node));
-
             // Burn the name both in the wrapper and the registry.
             _burnAll(node);
 
@@ -868,7 +865,7 @@ contract L2NameWrapper is
 
     /**
      * @notice Check whether a name can call setSubnodeOwner/setSubnodeRecord
-     * @dev Checks both CANNOT_CREATE_SUBDOMAIN and PARENT_CANNOT_CONTROL and whether not they have been burnt
+     * @dev Checks both CANNOT_CREATE_SUBDOMAIN and PARENT_CANNOT_CONTROL and whether not they have been burned
      *      and checks whether the owner of the subdomain is 0x0 for creating or already exists for
      *      replacing a subdomain. If either conditions are true, then it is possible to call
      *      setSubnodeOwner
@@ -893,7 +890,7 @@ contract L2NameWrapper is
 
             (, uint32 parentFuses, ) = getData(uint256(parentNode));
 
-            // Check to see if the parent has CANNOT_CREATE_SUBDOMAIN burnt.
+            // Check to see if the parent has CANNOT_CREATE_SUBDOMAIN burned.
             if (parentFuses & CANNOT_CREATE_SUBDOMAIN != 0) {
                 revert OperationProhibited(node);
             }
@@ -911,7 +908,7 @@ contract L2NameWrapper is
     /**
      * @notice Check whether a name can call setSubnodeOwner/setSubnodeRecord. A version of _canCallSetSubnode
      *        where the data is also passed, avoiding extra getData calls.
-     * @dev Checks both CANNOT_CREATE_SUBDOMAIN and PARENT_CANNOT_CONTROL and whether not they have been burnt
+     * @dev Checks both CANNOT_CREATE_SUBDOMAIN and PARENT_CANNOT_CONTROL and whether not they have been burned
      *      and checks whether the owner of the subdomain is 0x0 for creating or already exists for
      *      replacing a subdomain. If either conditions are true, then it is possible to call
      *      setSubnodeOwner
@@ -932,7 +929,7 @@ contract L2NameWrapper is
             
             // The name is expired.
 
-            // Check to see if the parent has CANNOT_CREATE_SUBDOMAIN burnt.
+            // Check to see if the parent has CANNOT_CREATE_SUBDOMAIN burned.
             if (parentFuses & CANNOT_CREATE_SUBDOMAIN != 0) {
                 revert OperationProhibited(node);
             }
