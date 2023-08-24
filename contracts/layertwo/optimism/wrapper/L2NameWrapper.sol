@@ -206,6 +206,8 @@ contract L2NameWrapper is
         // Check to see if the name is expired.
         if (expiry < block.timestamp) {
 
+            // The name is expired. 
+
             /** 
              * If the name is emancipated, set the owner to 0.
              * This is necessary so that expired emanciapted names cannot be transferred,
@@ -216,7 +218,7 @@ contract L2NameWrapper is
                 owner = address(0);
             }
 
-            // The name is expired, so set the fuses to 0.
+            // Set the fuses to 0.
             fuses = 0;
         }
     }
@@ -235,9 +237,9 @@ contract L2NameWrapper is
     }
 
     /**
-     * @notice Get the metadata uri
-     * @param tokenId The id of the token
-     * @return string uri of the metadata service
+     * @notice Get the metadata uri.
+     * @param tokenId The id of the token.
+     * @return string The uri of the metadata service.
      */
 
     function uri(
@@ -420,6 +422,8 @@ contract L2NameWrapper is
         bytes32 labelhash,
         uint64 expiry
     ) public returns (uint64) {
+
+        // Make the node from the parent node and labelhash.
         bytes32 node = _makeNode(parentNode, labelhash);
 
         // Make sure the name is wrapped.
@@ -433,7 +437,7 @@ contract L2NameWrapper is
 
         /**
          * Only allow the owner of the parent name, owner of the name with CAN_EXTEND_EXPIRY,
-         * or the approved contract on the node to extend the expiry of the name. 
+         * or the approved contract on the node or parent node to extend the expiry of the name. 
          */
 
         // If the caller is the parent name make sure it has the permissions to extend the expiry.
@@ -553,6 +557,8 @@ contract L2NameWrapper is
         uint32 fuses,
         uint64 expiry
     ) public {
+
+        // Make the node.
         bytes32 node = _makeNode(parentNode, labelhash);
 
         // Make sure the fuses being set do NOT include IS_DOT_ETH.
@@ -571,10 +577,16 @@ contract L2NameWrapper is
 
         // If setting fuses on a TLD, e.g. xyz, make sure the caller is the owner or an authorised caller.
         if (parentNode == ROOT_NODE) {
+
+            // The name is a TLD. 
+
+            // Make sure the caller is the owner or an authorised caller.
             if (!_canModifyName_WithData(msg.sender, nodeOwner, nodeFuses, nodeExpiry)) {
                 revert Unauthorised(node, msg.sender);
             }
         } else {
+
+            // The name is NOT a TLD.
 
             /** 
              * If setting fuses on a subdomain, make sure the caller is the 
@@ -696,10 +708,12 @@ contract L2NameWrapper is
         uint32 fuses,
         uint64 expiry
     ) public onlyTokenOwner(parentNode) returns (bytes32 node) {
+
+        // Make the node. 
         bytes32 labelhash = keccak256(bytes(label));
         node = _makeNode(parentNode, labelhash);
 
-        // Make an instance of the struct to hold the data of the node and parent node.
+        // Make an instance of the struct to hold input paramenters, the data of the node and parent node.
         NodeData memory nodeData;
 
         // Store the input parameters in the struct, we do this to solve a stack too deep issue. 
@@ -793,7 +807,7 @@ contract L2NameWrapper is
             (, uint32 fuses, ) = getData(uint256(node));
 
             // Check to make sure the name is NOT a .eth 2LD, e.g. vitalik.eth.
-            if (fuses & IS_DOT_ETH == IS_DOT_ETH) {
+            if (fuses & IS_DOT_ETH == IS_DOT_ETH) { //@audit - We could take this out. 
                 revert IncorrectTargetOwner(owner);
             }
 
