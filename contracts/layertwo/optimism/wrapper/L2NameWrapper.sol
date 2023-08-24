@@ -864,48 +864,6 @@ contract L2NameWrapper is
     }
 
     /**
-     * @notice Check whether a name can call setSubnodeOwner/setSubnodeRecord
-     * @dev Checks both CANNOT_CREATE_SUBDOMAIN and PARENT_CANNOT_CONTROL and whether not they have been burned
-     *      and checks whether the owner of the subdomain is 0x0 for creating or already exists for
-     *      replacing a subdomain. If either conditions are true, then it is possible to call
-     *      setSubnodeOwner
-     * @param parentNode Namehash of the parent name to check
-     * @param node Namehash of the subname to check
-     */
-
-    function _canCallSetSubnode(
-        bytes32 parentNode,
-        bytes32 node
-    ) internal view {
-        (
-            address nodeOwner,
-            uint32 nodeFuses,
-            uint64 nodeExpiry
-        ) = getData(uint256(node));
-
-        // Check if the name is expired and the owner is the 0 address. 
-        if ((nodeExpiry < block.timestamp) && (nodeOwner == address(0) || ens.owner(node) == address(0))) {
-            
-            // The name is expired.
-
-            (, uint32 parentFuses, ) = getData(uint256(parentNode));
-
-            // Check to see if the parent has CANNOT_CREATE_SUBDOMAIN burned.
-            if (parentFuses & CANNOT_CREATE_SUBDOMAIN != 0) {
-                revert OperationProhibited(node);
-            }
-        } else {
-
-            // The name is NOT expired.  
-
-            // Check if the node has PARENT_CANNOT_CONTROL set.
-            if (nodeFuses & PARENT_CANNOT_CONTROL != 0) {
-                revert OperationProhibited(node);
-            }
-        }
-    }
-
-    /**
      * @notice Check whether a name can call setSubnodeOwner/setSubnodeRecord. A version of _canCallSetSubnode
      *        where the data is also passed, avoiding extra getData calls.
      * @dev Checks both CANNOT_CREATE_SUBDOMAIN and PARENT_CANNOT_CONTROL and whether not they have been burned
