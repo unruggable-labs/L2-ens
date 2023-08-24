@@ -28,6 +28,7 @@ error WrongNumberOfChars(string label);
 error NoPricingData();
 error CannotSetNewCharLengthAmounts();
 error InvalidDuration(uint256 duration);
+error RandomNameNotFound();
 
 /**
  * @dev A registrar controller for registering and renewing names at fixed cost.
@@ -47,6 +48,8 @@ contract L2SubnameRegistrar is
     uint256 public constant MIN_REGISTRATION_DURATION = 28 days;
     bytes32 private constant ETH_NODE =
         0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
+    bytes32 private constant UNRUGGABLE_TLD_NODE = 
+        0xc951937fc733cfe92dd3ea5d53048d4f39082c7e84dfc0501b03d5e2dd672d5d;
     uint64 private constant MAX_EXPIRY = type(uint64).max;
     uint256 public immutable minCommitmentAge;
     uint256 public immutable maxCommitmentAge;
@@ -86,6 +89,7 @@ contract L2SubnameRegistrar is
         IL2NameWrapper _nameWrapper,
         IAggregatorInterface _usdOracle
     ) {
+
         if (_maxCommitmentAge <= _minCommitmentAge) {
             revert MaxCommitmentAgeTooLow();
         }
@@ -564,37 +568,84 @@ contract L2SubnameRegistrar is
         }
     }
 
+    /**
+     * @notice Register a random number .unruggable name.
+     * @param owner The address that will own the name.
+     * @param maxLoops The maximum number of times to check for an available name.
+     * @param numChars The number of characters in the name.
+     * @param salt The salt to be used for the commitment.
+     */ 
 
-    function getRandomName(
-    uint256 maxLoops, 
-    uint256 _numChars,
-    uint256 _salt
-) 
-    public view returns (bytes memory) {
-    require(_numChars > 0, "Number of characters must be greater than 0");
+    function registerUnruggable(
+        address owner,
+        uint256 maxLoops,
+        uint8 numChars,
+        uint256 salt
+    ) public returns(bytes32 /* node */){
 
-    bytes memory randomName = new bytes(_numChars);
+        // Get a random label
+        bytes memory label = _getRandomName(maxLoops, numChars, salt);
 
-    uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, _salt)));
+        // Register the .unruggable name using the NameWrapper setSubnodeRecord function.
+        bytes32 node = nameWrapper.setSubnodeRecord(
+            UNRUGGABLE_TLD_NODE,
+            string(label),
+            owner,
+            address(0), // We don't have an approved address.  
+            address(0), // We don't have a renewal controller.
+            0, // TTL
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL,
+            MAX_EXPIRY
+        );
 
-    for (uint256 count = 0; count < maxLoops; count++) {
-        for (uint256 i = 0; i < _numChars; i++) {
-            uint8 randomDigit = uint8(randomNumber % 10); // Extract the last digit
+        return node;
 
-            // Convert the digit to UTF-8 bytes
-            randomName[i] = bytes1(uint8(0x30) + randomDigit);
-
-            // Shift the random number to remove the last digit
-            randomNumber /= 10;
-        }
-
-        if (available(randomName)) {
-            return randomName;
-        }
     }
 
-    revert("Unable to generate an available name");
-}
+
+    /**
+     * @notice Create a random name using only digits. 
+     * @dev The function checks to see if the name is available for as many times as
+     *      maxLoops, and if a name is not found reverts. 
+     * @param maxLoops The maximum number of times to check for an available name.
+     * @param numChars The number of characters in the name.
+     * @param salt The salt to be used for the commitment. 
+     */
+
+    function _getRandomName(
+        uint256 maxLoops, 
+        uint8 numChars,
+        uint256 salt
+    ) 
+        internal view returns (bytes memory) {
+        require(numChars > 0, "Number of characters must be greater than 0");
+
+        bytes memory randomName = new bytes(numChars);
+
+        uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, salt)));
+
+        for (uint256 count = 0; count < maxLoops; count++) {
+            for (uint256 i = 0; i < numChars; i++) {
+                uint8 randomDigit = uint8(randomNumber % 10); // Extract the last digit
+
+                // Convert the digit to UTF-8 bytes
+                randomName[i] = bytes1(uint8(0x30) + randomDigit);
+
+                // Shift the random number to remove the last digit
+                randomNumber /= 10;
+            }
+
+            // create the node using the UNRUGGABLE_TLD_NODE as the parent.
+            bytes32 node = _makeNode(UNRUGGABLE_TLD_NODE, keccak256(randomName));
+
+            // Check to see if the name is available.
+            if (ens.owner(node) == address(0)) {
+                return randomName;
+            }
+        }
+
+        revert RandomNameNotFound();
+    }
 
     /**
     * @dev Converts USD to Wei. 
