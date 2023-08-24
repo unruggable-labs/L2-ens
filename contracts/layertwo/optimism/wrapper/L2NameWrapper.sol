@@ -1346,8 +1346,8 @@ contract L2NameWrapper is
     }
 
     /**
-     * @notice Checks to see if owner controlled fuses are being burned, and if so,
-     *         checks to see if PARENT_CANNOT_CONTROL and CANNOT_UNWRAP are also being burned.
+     * @notice Checks to see if fuses are being burned, and if so,
+     *         checks to see if PARENT_CANNOT_CONTROL is also being burned.
      * @param node The namehash of the name.
      * @param fuses The fuses of the name.
      */
@@ -1356,11 +1356,11 @@ contract L2NameWrapper is
 
         if (
             
-            // Check to see if owner controlled fuses are being burned.
-            fuses & ~PARENT_CONTROLLED_FUSES != 0 &&
+            // Checks to see if any fuses are being burned.
+            fuses != 0 &&  
 
-            // Check to see if PARENT_CANNOT_CONTROL and CANNOT_UNWRAP are being burned.
-            fuses & (PARENT_CANNOT_CONTROL | CANNOT_UNWRAP) != (PARENT_CANNOT_CONTROL | CANNOT_UNWRAP)
+            // Check to see if PARENT_CANNOT_CONTROL is being burned.
+            fuses & PARENT_CANNOT_CONTROL != PARENT_CANNOT_CONTROL
         ) {
             revert OperationProhibited(node);
         }
