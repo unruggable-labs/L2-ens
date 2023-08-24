@@ -651,7 +651,7 @@ contract L2NameWrapper is
         (, nodeData.parentFuses, nodeData.parentExpiry) = getData(uint256(parentNode));
 
         // Checks the parent to make sure it has the permissions it needs to create or update a subdomain. 
-        _canCallSetSubnode_WithData(nodeData.parentFuses, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry);
+        _canCallSetSubnode(nodeData.parentFuses, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry);
 
         // Make sure the expiry is between the old expiry and the parent expiry.
         expiry = _normaliseExpiry(expiry, nodeData.nodeExpiry, nodeData.parentExpiry);
@@ -725,7 +725,7 @@ contract L2NameWrapper is
         (nodeData.parentOwner, nodeData.parentFuses, nodeData.parentExpiry) = getData(uint256(parentNode));
 
         // Checks the parent to make sure it has the permissions it needs to create or update a subdomain. 
-        _canCallSetSubnode_WithData(nodeData.parentFuses, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry);
+        _canCallSetSubnode(nodeData.parentFuses, node, nodeData.nodeOwner, nodeData.nodeFuses, nodeData.nodeExpiry);
 
         // Make sure the expiry is between the old expiry and the parent expiry.
         expiry = _normaliseExpiry(expiry, nodeData.nodeExpiry, nodeData.parentExpiry);
@@ -864,8 +864,7 @@ contract L2NameWrapper is
     }
 
     /**
-     * @notice Check whether a name can call setSubnodeOwner/setSubnodeRecord. A version of _canCallSetSubnode
-     *        where the data is also passed, avoiding extra getData calls.
+     * @notice Check whether a name can call setSubnodeOwner/setSubnodeRecord.
      * @dev Checks both CANNOT_CREATE_SUBDOMAIN and PARENT_CANNOT_CONTROL and whether not they have been burned
      *      and checks whether the owner of the subdomain is 0x0 for creating or already exists for
      *      replacing a subdomain. If either conditions are true, then it is possible to call
@@ -874,7 +873,7 @@ contract L2NameWrapper is
      * @param node The namehash of the subname to check.
      */
 
-    function _canCallSetSubnode_WithData(
+    function _canCallSetSubnode(
         uint32 parentFuses,
         bytes32 node,
         address nodeOwner,
