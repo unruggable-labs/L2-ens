@@ -565,6 +565,52 @@ contract L2SubnameRegistrar is
     }
 
 
+        function getRandomName(
+        uint256 maxLoops, 
+        uint256 _minNumbers, 
+        uint256 _minLetters, 
+        uint256 _numChars,
+        uint256 _salt
+    ) 
+        public view returns (bytes32) {
+        // Generate the random name using only [a-z0-9] or [0x61-0x7a, 0x30-0x39]
+
+        // Try to find a name at most maxLoops times.
+        for (uint256 count = 0; count < maxLoops; count++) {
+
+            bytes32 randomName;
+
+            uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, count, _salt)));
+
+            for (uint256 i = 0; i < _numChars; i++) {
+                if (randomNumber % 2 == 0) {
+                    // The first character will be a number
+                    randomName = randomName | (bytes32(bytes1(uint8(48 + (randomNumber % 10)))) >> (i * 8));
+                    randomNumber = randomNumber >> 8;
+                } else {
+                    // The first character will be a letter
+                    randomName = randomName | (bytes32(bytes1(uint8(97 + (randomNumber % 26)))) >> (i * 8));
+                    randomNumber = randomNumber >> 8;
+                }
+
+                randomNumber = randomNumber >> 8;
+            }
+
+            //(bool isNormal, ) = randomName.isNormalized(_minNumbers, _minLetters, 1);
+
+            //bytes normalizedName = abi.encodePacked(uint8(bytes(label).length), randomName, bytes("\x0aunruggable\x00"));
+
+            //check if the name is available
+            if (available(randomName)) {
+                return randomName;
+            }
+        }
+        // If we can't find a name, revert.
+        revert NoNameFoundAfterNAttempts(maxLoops);
+    }
+
+
+
     /**
     * @dev Converts USD to Wei. 
     * @param amount The amount of USD to be converted to Wei.
