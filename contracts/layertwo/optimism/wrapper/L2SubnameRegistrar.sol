@@ -634,7 +634,12 @@ contract L2SubnameRegistrar is
 
         // Make sure the number of characters is greater than 0.
         if (numChars == 0){
-            revert WrongNumberOfCharsForRandomName(maxLoops);
+            revert("Number of characters must be greater than 0.");
+        }
+
+        // Make sure the number of loops is greater than 0.
+        if (maxLoops == 0){
+            revert("Max loops must be greater than 0.");
         }
 
         // Create a new bytes array to hold the random name.
