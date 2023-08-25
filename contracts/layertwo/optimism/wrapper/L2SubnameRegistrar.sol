@@ -14,21 +14,23 @@ import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInter
 import {Balances} from "optimism/wrapper/Balances.sol";
 import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
 
+//import foundry console logging.
+import "forge-std/console.sol";
+
 error CommitmentTooNew(bytes32 commitment);
 error CommitmentTooOld(bytes32 commitment);
 error NameNotAvailable(bytes name);
 error DurationTooShort(uint256 duration);
-error ResolverRequiredWhenDataSupplied();
 error UnexpiredCommitmentExists(bytes32 commitment);
 error InsufficientValue();
 error UnauthorizedAddress(bytes32 node);
 error MaxCommitmentAgeTooLow();
 error MaxCommitmentAgeTooHigh();
 error WrongNumberOfChars(string label);
-error NoPricingData();
 error CannotSetNewCharLengthAmounts();
 error InvalidDuration(uint256 duration);
 error RandomNameNotFound();
+error WrongNumberOfCharsForRandomName(uint256 numChars);
 
 /**
  * @dev A registrar controller for registering and renewing names at fixed cost.
@@ -167,7 +169,7 @@ contract L2SubnameRegistrar is
      * @notice Add a name to the allow list.
      * @param _name The name in DNS format, e.g. vitalik.eth
      * @param _allow A bool indicating if the name is allowed to be listed.
-    */
+     */
 
     function allowName(bytes calldata _name, bool _allow) public onlyOwner {
 
@@ -285,6 +287,7 @@ contract L2SubnameRegistrar is
      * @param parentNode The namehash of the parent name.
      * @param charLength The character length, e.g. 3 would be for three characters. Use 0 for the default amount.
      */
+
     function getPriceDataForLength(bytes32 parentNode, uint16 charLength) public view returns (uint256){
         return pricingData[parentNode].charAmounts[charLength];
     }
@@ -295,6 +298,7 @@ contract L2SubnameRegistrar is
      * @param charLength The character length, e.g. 3 would be for three characters. Use 0 for the default amount.
      * @param charAmount The amount in USD/year for a character count, e.g. amount for three characters.
      */
+
     function updatePriceForCharLength(
         bytes32 parentNode,
         uint16 charLength,
@@ -322,6 +326,7 @@ contract L2SubnameRegistrar is
      * @param charAmount The amount in USD/sec. (with 18 digits of precision) 
      * for a character count, e.g. amount for three characters.
      */
+
     function addNextPriceForCharLength(
         bytes32 parentNode,
         uint256 charAmount
@@ -340,6 +345,7 @@ contract L2SubnameRegistrar is
      * @notice Get the last length for a character length that has a price (can be 0), e.g. three characters.
      * @return The length of the last character length that was set.
      */
+
     function getLastCharIndex(bytes32 parentNode) public view returns (uint256) {
         return pricingData[parentNode].charAmounts.length - 1;
     }
@@ -349,6 +355,7 @@ contract L2SubnameRegistrar is
      * @param parentNode The namehash of the parent name.
      * @param _offerSubnames A bool indicating the parent name owner is offering subnames.
      */
+
     function setOfferSubnames(
         bytes32 parentNode,
         bool _offerSubnames
@@ -412,6 +419,12 @@ contract L2SubnameRegistrar is
                 )
             );
     }
+
+
+    /**
+     * @notice Registers a commitment hash for a name.
+     * @param commitment The hash to register. 
+     */
 
     function commit(bytes32 commitment) public {
         if (commitments[commitment] + maxCommitmentAge >= block.timestamp) {
@@ -618,14 +631,26 @@ contract L2SubnameRegistrar is
         uint256 salt
     ) 
         internal view returns (bytes memory) {
-        require(numChars > 0, "Number of characters must be greater than 0");
 
+        // Make sure the number of characters is greater than 0.
+        if (numChars == 0){
+            revert WrongNumberOfCharsForRandomName(maxLoops);
+        }
+
+        // Create a new bytes array to hold the random name.
         bytes memory randomName = new bytes(numChars);
 
+        // Generate a "random number" (hash of the input data) using the block timestamp, msg.sender, and salt.
         uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, salt)));
 
+
+        // Attempt to find a available name for maxLoops times. 
         for (uint256 count = 0; count < maxLoops; count++) {
+
+            // Loop numChars times.
             for (uint256 i = 0; i < numChars; i++) {
+
+                // Get the last digit of the random number.
                 uint8 randomDigit = uint8(randomNumber % 10); // Extract the last digit
 
                 // Convert the digit to UTF-8 bytes
@@ -644,6 +669,7 @@ contract L2SubnameRegistrar is
             }
         }
 
+        // If we have not found an available name then revert.
         revert RandomNameNotFound();
     }
 
@@ -673,6 +699,12 @@ contract L2SubnameRegistrar is
     }
 
     /* Internal functions */
+
+    /**
+     * @notice Checks to see if the commitment is valid and burns it.
+     * @param duration The duration of the registration.
+     * @param commitment The commitment to be checked.
+     */
 
     function _burnCommitment(
         uint256 duration,
