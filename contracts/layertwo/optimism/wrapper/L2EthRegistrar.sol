@@ -338,8 +338,6 @@ contract L2EthRegistrar is
             revert InvalidDuration(duration); 
         }
 
-        address parentOwner = nameWrapper.ownerOf(uint256(ETH_NODE));
-
         // Check to make sure the label is a valid length.
         if(!validLength(label)){
             revert WrongNumberOfChars(label);
@@ -435,7 +433,6 @@ contract L2EthRegistrar is
         bytes memory name = _addLabel(label, "\x03eth\x00");
 
         // Get the owners of the name and the parent name.
-        address parentOwner = nameWrapper.ownerOf(uint256(ETH_NODE));
         address nodeOwner = nameWrapper.ownerOf(uint256(node));
 
         // remove the access control check, because anyone can renew a .eth 2LD name. 
