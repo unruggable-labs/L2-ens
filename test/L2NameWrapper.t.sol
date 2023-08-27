@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
-import {IL2NameWrapper, CANNOT_SET_TTL, CANNOT_SET_RESOLVER, CAN_EXTEND_EXPIRY, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper, CANNOT_SET_TTL, CANNOT_SET_RESOLVER, CAN_EXTEND_EXPIRY, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, IS_DOT_ETH} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 import {L2UpgradedNameWrapperMock} from "optimism/wrapper/mocks/L2UpgradedNameWrapperMock.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
@@ -117,7 +117,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
         bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
 
 
-        // Register a subname using the SubnameWrapper contract. 
+        // Register a subname. 
         node = nameWrapper.setSubnodeRecord(
             parentNode,
             "sub", 
@@ -174,14 +174,93 @@ contract L2NameWrapperTest is Test, GasHelpers {
         assertEq(nameWrapper.ownerOf(uint256(node)), address(0));
     }
 
+    function test_004____getApproved_________________ApproveAContractOnANodeAndGetIt() public {
+
+        // Register a name in the name wrapper.
+        bytes32 node = registerAndWrap(account, address(0));
+
+        // Approve account2, which is able to renew the name.
+        nameWrapper.approve(account2, uint256(node));
+
+        // Check to make sure the approved account is account2.
+        assertEq(nameWrapper.getApproved(uint256(node)), account2);
+
+        // Switch the caller to account2.
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        // Make the parent node
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        // Make the labelhash of the subname.
+        (bytes32 labelhash, ) = bytes("\x03sub\x03abc\x03eth\x00").readLabel(0); 
+        
+        // Extend the expiry of the subname.
+        nameWrapper.extendExpiry(
+            parentNode, 
+            labelhash, 
+            uint64(block.timestamp) + oneYear + oneMonth
+        );
+
+        // Make sure the name is renewed.
+        ( , , uint64 expiry) = nameWrapper.getData(uint256(node));
+        
+        // Make sure the name was renewed.
+        assertEq(expiry, uint64(block.timestamp) + oneYear + oneMonth);
+
+    }
+
+    function test_004____approve_____________________ApprovedAddressIsBurnedWhenNameIsBurned() public {
+
+
+        // Register a name in the name wrapper.
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        // Register a subname. 
+        bytes32 node = nameWrapper.setSubnodeRecord(
+            parentNode,
+            "sub", 
+            account, 
+            address(0),
+            publicResolver, 
+            0, //TTL
+            0, 
+            0 
+        );
+
+        // Approve account2, which is able to renew the name.
+        nameWrapper.approve(account2, uint256(node));
+
+        // Check to make sure the approved account is account2.
+        assertEq(nameWrapper.getApproved(uint256(node)), account2);
+
+        /**
+         * Burn the name by using setSubnodeOwner, and setting the owner to 0.
+         * It appears that I am setting the approved contract to account2, however, 
+         * because I am also setting the owner to 0, the approved contract is burned.
+         */
+        nameWrapper.setSubnodeOwner(
+            parentNode, 
+            "sub",
+            address(0),
+            account2, 
+            0, //TTL
+            0 
+        );
+
+        // Check to make sure the approved account is address 0.
+        assertEq(nameWrapper.getApproved(uint256(node)), address(0));
+
+    }
+
     // Check to make sure the metadata service was setup and returns a test uri
-    function test_004____setMetadataService__________MetadataServiceWasSetup() public{
+    function test_005____setMetadataService__________MetadataServiceWasSetup() public{
 
         assertEq(address(nameWrapper.metadataService()), address(staticMetadataService));
     }
     
     // Check to make sure the metadata service was setup and returns a test uri
-    function test_005____uri_________________________ReturnsCorrectURI() public{
+    function test_006____uri_________________________ReturnsCorrectURI() public{
         bytes32 node = registerAndWrap(account, address(0));
         assertEq(nameWrapper.uri(uint256(node)), "testURI");
     }
@@ -208,8 +287,87 @@ contract L2NameWrapperTest is Test, GasHelpers {
         assertEq(nameWrapper.canModifyName(node, account2), false);
     }
 
+
+    function test_009____wrapTLD_____________________ExtendTheExpiryOfANameIfCallerIsParent() public{
+
+        //Save the bytes of the name .unruggable in DNS format.
+        bytes memory name = bytes("\x0aunruggable\x00");
+
+        // Create a namhash of the name.
+        bytes32 node = name.namehash(0);
+
+        // Register the name in the ens registry. 
+        ens.setSubnodeOwner(ROOT_NODE, keccak256(bytes("unruggable")), account);
+
+        // Approve the name wrapper to control the name.
+        ens.setApprovalForAll(address(nameWrapper), true);
+
+        // Wrap a new TLD, .unruggable using DNS format.
+        nameWrapper.wrapTLD(
+            name, 
+            account, 
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME,
+            uint64(block.timestamp) + oneYear
+        );
+
+        // Create a subname of the .unruggable name, using setSubnodeOwner.
+        bytes32 subnode = nameWrapper.setSubnodeOwner(
+            node,
+            "sub", 
+            account2, 
+            address(0), 
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME, 
+            uint64(block.timestamp) + oneYear 
+        );
+        
+        // Check to make sure the owner of the subname is account2.
+        assertEq(nameWrapper.ownerOf(uint256(subnode)), account2);
+
+    }
+
+
+    // Test registerAndWrapEth2LD
+    function test_010____registerAndWrapEth2LD_______RegisterAndWrapEth2LD() public{
+
+        // Make account a controller. 
+        nameWrapper.setController(account, true);
+
+        // Register a 2LD .eth name in the NameWrapper
+        nameWrapper.registerAndWrapEth2LD(
+            "newname", 
+            account,
+            account2, // approved account
+            twoYears,
+            publicResolver,
+            uint16(0) //fuses
+        );
+
+        // Make node.
+        bytes32 node = bytes("\x07newname\x03eth\x00").namehash(0);
+
+        // Make sure the name is registered in the ENS registry.
+        assertEq(ens.owner(node), address(nameWrapper));
+
+        // Make sure the name is registered in the NameWrapper.
+        assertEq(nameWrapper.ownerOf(uint256(node)), account);
+
+        // Make sure the approved account is set.
+        assertEq(nameWrapper.getApproved(uint256(node)), account2);
+
+        // Make sure the resolver is set.
+        assertEq(ens.resolver(node), publicResolver);
+
+        // Make sure the expiry was set.
+        ( , uint32 fuses, uint64 expiry) = nameWrapper.getData(uint256(node));
+        assertEq(expiry, uint64(block.timestamp) + twoYears + GRACE_PERIOD);
+
+        // Make sure the fuses were set correctly.
+        assertEq(fuses, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL | IS_DOT_ETH);
+
+    }
+
     // Check to make sure that the parent owner can extend the expiry of a name.
-    function test_012____exendExpiry_________________ExtendTheExpiryOfANameIfCallerIsParent() public{
+    function test_018____exendExpiry_________________ExtendTheExpiryOfANameIfCallerIsParent() public{
 
         bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         (bytes32 labelhash, ) = bytes("\x03sub\x03abc\x03eth\x00").readLabel(0);
@@ -239,7 +397,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
     }
 
     // Check to make sure that the owner can extend the expiry of a name, if set to the renewal controller address.
-    function test_014____exendExpiry_________________ExtendTheExpiryOfANameIfRenewalControllerSetToOwner() public{
+    function test_019____exendExpiry_________________ExtendTheExpiryOfANameIfRenewalControllerSetToOwner() public{
 
         bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
         (bytes32 labelhash, ) = bytes("\x03sub\x03abc\x03eth\x00").readLabel(0);
