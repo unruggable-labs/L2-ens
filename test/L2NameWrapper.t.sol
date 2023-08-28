@@ -24,6 +24,7 @@ error NameMustBeWrappedInNameWrapper();
 error UnauthorizedSender(bytes32 node, address sender);
 error NameIsNotWrapped();
 error OperationProhibited(bytes32 node);
+error Unauthorized(bytes32 node, address addr);
 
 contract L2NameWrapperTest is Test, GasHelpers {
 
@@ -60,6 +61,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
     address account2 = 0x0000000000000000000000000000000000004612;
     address accountReferrer = 0x0000000000000000000000000000000000000001;
     address publicResolver = 0x0000000000000000000000000000000000000006;
+    address hacker = 0x0000000000000000000000000000000000001101; 
 
     // Set a dummy address for the renewal controller.
     IRenewalController renewalController = IRenewalController(address(0x0000000000000000000000000000000000000007));
@@ -371,6 +373,46 @@ contract L2NameWrapperTest is Test, GasHelpers {
         assertEq(nameWrapper.ownerOf(uint256(subnode)), account2);
 
     }
+    function test_009____wrapTLD_____________________RevertsWhenANonOwnerCallTheFunction() public{
+
+        //Save the bytes of the name .unruggable in DNS format.
+        bytes memory name = bytes("\x0aunruggable\x00");
+
+        // Create a namhash of the name.
+        bytes32 node = name.namehash(0);
+
+        // Register the name in the ens registry to an account we don't control. 
+        ens.setSubnodeOwner(ROOT_NODE, keccak256(bytes("unruggable")), account2);
+
+        // Make sure the function reverts.
+        vm.expectRevert(abi.encodeWithSelector(Unauthorized.selector, node, account));
+
+        // Wrap a new TLD, .unruggable using DNS format.
+        nameWrapper.wrapTLD(
+            name, 
+            account, 
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME,
+            uint64(block.timestamp) + oneYear
+        );
+
+        // This time register the name to our account, but don't approve the name wrapper. 
+        ens.setSubnodeOwner(ROOT_NODE, keccak256(bytes("unruggable")), account);
+
+        // Don't approve the name wrapper to control the name.
+        // ens.setApprovalForAll(address(nameWrapper), true);
+
+        // Make sure the function reverts.
+        vm.expectRevert();
+
+        // Wrap a new TLD, .unruggable using DNS format.
+        nameWrapper.wrapTLD(
+            name, 
+            account, 
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME,
+            uint64(block.timestamp) + oneYear
+        );
+
+    }
 
 
     // Test registerAndWrapEth2LD
@@ -410,6 +452,42 @@ contract L2NameWrapperTest is Test, GasHelpers {
 
         // Make sure the fuses were set correctly.
         assertEq(fuses, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL | IS_DOT_ETH);
+
+    }
+
+    function test_010____registerAndWrapEth2LD_______FailsWhenTheNameHasAlreadyBeenRegistered() public{
+
+        // Make account a controller. 
+        nameWrapper.setController(account, true);
+
+        // Register a 2LD .eth name in the NameWrapper
+        nameWrapper.registerAndWrapEth2LD(
+            "newname", 
+            account,
+            account2, // approved account
+            twoYears,
+            publicResolver,
+            uint16(0) //fuses
+        );
+
+        // Make node.
+        bytes32 node = bytes("\x07newname\x03eth\x00").namehash(0);
+
+        // Make sure the name is registered in the ENS registry.
+        assertEq(ens.owner(node), address(nameWrapper));
+
+        // Check to make sure the function reverts when called on an unavailable name.
+        vm.expectRevert(abi.encodeWithSelector(OperationProhibited.selector, node));
+
+        // Register a 2LD .eth name in the NameWrapper
+        nameWrapper.registerAndWrapEth2LD(
+            "newname", 
+            account,
+            account2, // approved account
+            twoYears,
+            publicResolver,
+            uint16(0) //fuses
+        );
 
     }
 
@@ -458,6 +536,21 @@ contract L2NameWrapperTest is Test, GasHelpers {
         assertEq(expiry, uint64(block.timestamp) + GRACE_PERIOD + oneYear);
 
 
+    }
+    function test_011____renewEth2LD_________________RevertsWhenNameIsNotWrapped() public{
+
+        // Make account a controller. 
+        nameWrapper.setController(account, true);
+
+
+        // Make sure the function reverts with NameIsNotWrapped() when called on an unwrapped name.
+        vm.expectRevert(abi.encodeWithSelector(NameIsNotWrapped.selector));
+
+        // Renew the name.
+        nameWrapper.renewEth2LD(
+            keccak256(bytes("newname")), 
+            oneYear
+        );
     }
 
     // Check to make sure that the parent owner can extend the expiry of a name.
@@ -591,7 +684,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
         // advance time by one year and a day to make the name expired.
         vm.warp(block.timestamp + oneYear + oneDay);
 
-        // make sure the funciton reverts with UnauthorizedSender(node, msg.sender)
+        // make sure the funciton reverts with NameIsNotWrapped()
         vm.expectRevert(abi.encodeWithSelector(NameIsNotWrapped.selector));
 
         // set the expiry for 1 years ahead.
@@ -627,8 +720,43 @@ contract L2NameWrapperTest is Test, GasHelpers {
         // Change the caller to accountReferrer. 
         vm.startPrank(accountReferrer);
 
-        // make sure the function reverts with UnauthorizedSender(node, msg.sender)
+        // make sure the function reverts with NameIsNotWrapped()
         vm.expectRevert(abi.encodeWithSelector(NameIsNotWrapped.selector));
+
+        // set the expiry for 1 years ahead.
+        nameWrapper.extendExpiry(
+            parentNode, 
+            labelhash, 
+            uint64(block.timestamp) + oneYear + oneDay
+        );
+    }
+
+    function test_017____extendExpiry________________RevertsIfNotAuthorized() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        (bytes32 labelhash, ) = bytes("\x03sub\x03abc\x03eth\x00").readLabel(0);
+
+        // Register a subname using the L2NameWrapper contract. 
+        bytes32 node = nameWrapper.setSubnodeRecord(
+            parentNode, 
+            "sub",
+            account2, 
+            accountReferrer, // set the accountReferrer as the approved contract. 
+            publicResolver, 
+            0, //TTL
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL, 
+            uint64(block.timestamp) + oneYear 
+        );
+
+        // advance time to one day less than a year.
+        vm.warp(block.timestamp + oneYear - oneDay);
+
+        vm.stopPrank();
+        // Change the caller to "hacker". 
+        vm.startPrank(hacker);
+
+        // make sure the function reverts with UnauthorizedSender(node, msg.sender)
+        vm.expectRevert(abi.encodeWithSelector(Unauthorized.selector, node, hacker));
 
         // set the expiry for 1 years ahead.
         nameWrapper.extendExpiry(
