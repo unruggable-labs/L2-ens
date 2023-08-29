@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
-import {IL2NameWrapper, CANNOT_SET_TTL, CANNOT_SET_RESOLVER, CAN_EXTEND_EXPIRY, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, IS_DOT_ETH, CANNOT_APPROVE} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper, CANNOT_TRANSFER, CANNOT_CREATE_SUBDOMAIN, CANNOT_SET_TTL, CANNOT_SET_RESOLVER, CAN_EXTEND_EXPIRY, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, IS_DOT_ETH, CANNOT_APPROVE} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 import {L2UpgradedNameWrapperMock} from "optimism/wrapper/mocks/L2UpgradedNameWrapperMock.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
@@ -26,6 +26,8 @@ error NameIsNotWrapped();
 error OperationProhibited(bytes32 node);
 error Unauthorized(bytes32 node, address addr);
 error CannotUpgrade();
+error LabelTooShort();
+error LabelTooLong(string label);
 
 contract L2NameWrapperTest is Test, GasHelpers {
 
@@ -338,7 +340,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
     }
 
 
-    function test_009____wrapTLD_____________________ExtendTheExpiryOfANameIfCallerIsParent() public{
+    function test_009____wrapTLD_____________________WrapsATLD() public{
 
         //Save the bytes of the name .unruggable in DNS format.
         bytes memory name = bytes("\x0aunruggable\x00");
@@ -374,6 +376,42 @@ contract L2NameWrapperTest is Test, GasHelpers {
         assertEq(nameWrapper.ownerOf(uint256(subnode)), account2);
 
     }
+
+    function test_009____wrapTLD_____________________RevertsWhenWrappingATLDTwice() public{
+
+        //Save the bytes of the name .unruggable in DNS format.
+        bytes memory name = bytes("\x0aunruggable\x00");
+
+        // Create a namhash of the name.
+        bytes32 node = name.namehash(0);
+
+        // Register the name in the ens registry. 
+        ens.setSubnodeOwner(ROOT_NODE, keccak256(bytes("unruggable")), account);
+
+        // Approve the name wrapper to control the name.
+        ens.setApprovalForAll(address(nameWrapper), true);
+
+        // Wrap a new TLD, .unruggable using DNS format.
+        nameWrapper.wrapTLD(
+            name, 
+            account, 
+            0,
+            uint64(block.timestamp) + oneYear
+        );
+
+        // Check to make sure it reverts if called twice. 
+        vm.expectRevert(abi.encodeWithSelector(Unauthorized.selector, node, account));
+
+        // Wrap a new TLD, .unruggable using DNS format.
+        nameWrapper.wrapTLD(
+            name, 
+            account2, 
+            0,
+            uint64(block.timestamp) + oneYear
+        );
+
+    }
+
     function test_009____wrapTLD_____________________RevertsWhenANonOwnerCallTheFunction() public{
 
         //Save the bytes of the name .unruggable in DNS format.
@@ -489,6 +527,91 @@ contract L2NameWrapperTest is Test, GasHelpers {
             publicResolver,
             uint16(0) //fuses
         );
+
+    }
+
+    function test_010____registerAndWrapEth2LD_______EdgeCasesTooLongAndTooShort() public{
+
+        // Make account a controller. 
+        nameWrapper.setController(account, true);
+
+        // Make sure the function reverts with LabelTooShort().
+        vm.expectRevert(abi.encodeWithSelector(LabelTooShort.selector));
+
+        // Register a 2LD .eth name in the NameWrapper with zero length.
+        nameWrapper.registerAndWrapEth2LD(
+            "", 
+            account,
+            account2, // approved account
+            twoYears,
+            publicResolver,
+            uint16(0) //fuses
+        );
+
+        // Create a 256 character string. 
+        bytes memory long255LengthString = new bytes(256);
+        for(uint i = 0; i < 256; i++){
+            long255LengthString[i] = "a";
+        }
+
+        // Make sure the function reverts with LabelTooLong().
+        vm.expectRevert(abi.encodeWithSelector(LabelTooLong.selector, string(long255LengthString)));
+
+        // Register a 2LD .eth name in the NameWrapper with zero length.
+        nameWrapper.registerAndWrapEth2LD(
+            string(long255LengthString), 
+            account,
+            account2, // approved account
+            twoYears,
+            publicResolver,
+            uint16(0) //fuses
+        );
+
+    }
+
+    function test_010____registerAndWrapEth2LD_______RegisteringAnExpiredNameDoesntKeepFuses() public{
+
+        // Make account a controller. 
+        nameWrapper.setController(account, true);
+
+        // Register a 2LD .eth name in the NameWrapper
+        nameWrapper.registerAndWrapEth2LD(
+            "newname", 
+            account,
+            account2, // approved account
+            oneYear,
+            publicResolver,
+            uint16(CANNOT_CREATE_SUBDOMAIN)
+        );
+
+        bytes32 node = bytes("\x07newname\x03eth\x00").namehash(0);
+
+        //Check to make sure the fuse is set.
+        ( , uint32 fuses, ) = nameWrapper.getData(uint256(node));
+        assertEq(fuses, CANNOT_CREATE_SUBDOMAIN | CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL | IS_DOT_ETH);
+
+        // Make sure the name is registered in the ENS registry.
+        assertEq(ens.owner(node), address(nameWrapper));
+
+        // Jump forward one year and the GRACE_PERIOD plus one day. 
+        vm.warp(uint64(block.timestamp) + oneYear + GRACE_PERIOD + oneDay);
+
+        // Make sure the name is expired in the name wrapper.
+        assertEq(nameWrapper.ownerOf(uint256(node)), address(0));
+
+        // Try registering the name again
+        nameWrapper.registerAndWrapEth2LD(
+            "newname", 
+            account,
+            account2, // approved account
+            oneYear,
+            publicResolver,
+            uint16(0)
+        );
+
+        // Make sure the CANNOT_CREATE_SUBDOMAIN fuse is not set.
+        ( , uint32 fuses2, ) = nameWrapper.getData(uint256(node));
+        assertEq(fuses2, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL | IS_DOT_ETH);
 
     }
 
@@ -864,6 +987,30 @@ contract L2NameWrapperTest is Test, GasHelpers {
 
     }
 
+    function test_020____setFuses____________________RevertIfSettingFusesWithoutCANNOT_BURN_NAME() public {
+        
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        // Register a subname. 
+        bytes32 node = nameWrapper.setSubnodeRecord(
+            parentNode,
+            "sub", 
+            account, 
+            address(0),
+            publicResolver, 
+            0, //TTL
+            0, 
+            uint64(block.timestamp) + oneYear 
+        );
+
+        // Make sure the function reverts when trying to set the fuses.
+        vm.expectRevert(abi.encodeWithSelector(OperationProhibited.selector, node));
+
+        // Set fuses using the subname wrapper.
+        nameWrapper.setFuses(node, uint16(CANNOT_CREATE_SUBDOMAIN));
+
+    }
+
     // Check to make sure the setRecord function works.
     function test_021____setRecord___________________SetRecordIncludingResolverAndTTL() public {
         
@@ -883,6 +1030,88 @@ contract L2NameWrapperTest is Test, GasHelpers {
 
         // Check to make sure the resolver is set to the custom resolver.
         assertEq(ens.resolver(node), customResolver);
+
+    }
+
+    function test_021____setRecord___________________NameCanBeBurned() public {
+        
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        // Register a subname. 
+        bytes32 node = nameWrapper.setSubnodeRecord(
+            parentNode,
+            "sub", 
+            account, 
+            address(0),
+            publicResolver, 
+            0, //TTL
+            0, 
+            uint64(block.timestamp) + oneYear 
+        );
+
+        // Set the record using the wrapper.
+        // This will not unwrap the name from the subname wrapper contract. 
+        nameWrapper.setRecord(
+            node, 
+            address(0), // burn address
+            customResolver, 
+            0 
+        );
+
+        // Check to make sure the name is burned
+        assertEq(ens.owner(node), address(0));
+
+        // Check to make sure the fuses are burned.
+        ( , uint32 fuses, ) = nameWrapper.getData(uint256(node));
+
+    }
+
+    function test_021____setRecord___________________RevertIfFuseCANNOT_BURN_NAMEIsSet() public {
+        
+        bytes32 node = registerAndWrap(account, address(0));
+
+
+        // Make sure the function reverts when trying to burn the name.
+        vm.expectRevert(abi.encodeWithSelector(OperationProhibited.selector, node));
+
+        // Set the record using the wrapper.
+        // This will not unwrap the name from the wrapper contract. 
+        nameWrapper.setRecord(
+            node, 
+            address(0), // burn address
+            customResolver, 
+            0 
+        );
+
+    }
+
+    function test_021____safeTransferFrom____________RevertIfCANNOT_TRANSFERIsBurned() public {
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        // Burn the CANNOT_TRANSFER fuse on the name.
+        nameWrapper.setFuses(parentNode, uint16(CANNOT_TRANSFER));
+
+        // Make sure the function reverts when trying to burn the name.
+        vm.expectRevert(abi.encodeWithSelector(OperationProhibited.selector, parentNode));
+
+        // Do a safe transfer from "account" to "account2".
+        nameWrapper.safeTransferFrom(account, account2, uint256(parentNode), 1, "");
+
+    }
+
+    function test_021____safeTransferFrom____________RevertIfIS_DOT_ETHAndInGracePeriod() public {
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        // Move forward one year and a day in time. 
+        vm.warp(uint64(block.timestamp) + twoYears + oneDay);
+
+        // Make sure the function reverts when trying to transfer the name.
+        vm.expectRevert(bytes("ERC1155: insufficient balance for transfer"));
+
+        // Do a safe transfer from "account" to "account2".
+        nameWrapper.safeTransferFrom(account, account2, uint256(parentNode), 1, "");
 
     }
 
@@ -933,14 +1162,14 @@ contract L2NameWrapperTest is Test, GasHelpers {
         nameWrapper.setChildFuses(
             node,
             labelhash,
-            PARENT_CANNOT_CONTROL,
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME,
             0
         );
 
         // Check to make sure the fueses are set correctly.
         ( , uint32 fuses, ) = nameWrapper.getData(uint256(subnode));
 
-        assertEq(fuses, PARENT_CANNOT_CONTROL);
+        assertEq(fuses, PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME);
 
     }
 
@@ -1084,6 +1313,30 @@ contract L2NameWrapperTest is Test, GasHelpers {
 
     }
 
+        function test_023____setChildFuses_______________CannotSetIS_DOT_ETH() public { //@audit - check all the fuses that can't be set.
+
+        bytes32 parentNode = registerAndWrap(account, address(0));
+
+        // Make a node for the subnode. 
+        bytes32 node = bytes("\x05subby\x03sub\x03abc\x03eth\x00").namehash(0);
+
+        // Revert if the IS_DOT_ETH fuse is set.
+        vm.expectRevert(abi.encodeWithSelector(OperationProhibited.selector, node));
+
+        // Create a sub-subname.
+        nameWrapper.setSubnodeRecord(
+            parentNode,
+            "subby",
+            account2,
+            address(0), // no approved account
+            address(0), // no resolver
+            0, //TTL
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME | IS_DOT_ETH, //fuses
+            uint64(block.timestamp) + oneYear
+        );
+
+    }
+
     function test_024____setSubnodeOwner_____________CreateASubnode() public {
 
         bytes32 node = registerAndWrap(account, address(0));
@@ -1105,6 +1358,73 @@ contract L2NameWrapperTest is Test, GasHelpers {
         assertEq(nameWrapper.names(subnode), bytes("\x05subby\x03sub\x03abc\x03eth\x00"));
     }
 
+    function test_024____setSubnodeOwner_____________RevertsWhenPARENT_CANNOT_CONTROLIsBurned() public {
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        // Register a subname. 
+        bytes32 node = nameWrapper.setSubnodeRecord(
+            parentNode,
+            "sub", 
+            account, 
+            address(0),
+            publicResolver, 
+            0, //TTL
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL | CANNOT_CREATE_SUBDOMAIN, 
+            uint64(block.timestamp) + oneYear 
+        );
+
+
+        // Make sure the function reverts when CANNOT_CREATE_SUBDOMAIN is burned.
+        vm.expectRevert(abi.encodeWithSelector(OperationProhibited.selector, node));
+
+        // Create a sub-subname.
+        nameWrapper.setSubnodeOwner(
+            parentNode,
+            "sub",
+            account2,
+            address(0), // no approved account
+            0,
+            0
+        );
+
+    }
+
+    function test_024____setSubnodeOwner_____________RevertsWhenCANNOT_CREATE_SUBDOMAINIsBurned() public {
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        // Register a subname. 
+        bytes32 node = nameWrapper.setSubnodeRecord(
+            parentNode,
+            "sub", 
+            account, 
+            address(0),
+            publicResolver, 
+            0, //TTL
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL | CANNOT_CREATE_SUBDOMAIN, 
+            uint64(block.timestamp) + oneYear 
+        );
+
+
+        // Make the subnode using the DNS name.
+        bytes32 subnode = bytes("\x05subby\x03sub\x03abc\x03eth\x00").namehash(0);
+
+        // Make sure the function reverts when CANNOT_CREATE_SUBDOMAIN is burned.
+        vm.expectRevert(abi.encodeWithSelector(OperationProhibited.selector, subnode));
+
+        // Create a sub-subname.
+        nameWrapper.setSubnodeOwner(
+            node,
+            "subby",
+            account2,
+            address(0), // no approved account
+            0,
+            0
+        );
+
+    }
+
     function test_025____setSubnodeRecord____________CreateASubnodeWithTTLAndResolver() public {
 
         bytes32 node = registerAndWrap(account, address(0));
@@ -1119,6 +1439,44 @@ contract L2NameWrapperTest is Test, GasHelpers {
             100,
             0,
             0
+        );
+
+        // Check to make sure the subname is owned by account2.
+        assertEq(nameWrapper.ownerOf(uint256(subnode)), account2);
+
+        // Check to make sure the sub-subname name is "subby.abc.abc.eth"
+        assertEq(nameWrapper.names(subnode), bytes("\x05subby\x03sub\x03abc\x03eth\x00"));
+
+        // make sure the TTL is set to 100.
+        assertEq(ens.ttl(subnode), 100);
+    }
+
+    function test_025____setSubnodeRecord____________UpdateANameThatIsWrapped() public {
+
+        bytes32 node = registerAndWrap(account, address(0));
+
+        // Create a sub-subname.
+        bytes32 subnode = nameWrapper.setSubnodeRecord(
+            node,
+            "subby",
+            account,
+            address(0), // no approved account
+            publicResolver,
+            100,
+            0,
+            0
+        );
+
+        // Create a sub-subname.
+        nameWrapper.setSubnodeRecord(
+            node,
+            "subby",
+            account2,
+            address(0), // no approved account
+            publicResolver,
+            100,
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME,
+            uint64(block.timestamp) + oneYear
         );
 
         // Check to make sure the subname is owned by account2.
