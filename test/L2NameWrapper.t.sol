@@ -25,6 +25,7 @@ error UnauthorizedSender(bytes32 node, address sender);
 error NameIsNotWrapped();
 error OperationProhibited(bytes32 node);
 error Unauthorized(bytes32 node, address addr);
+error CannotUpgrade();
 
 contract L2NameWrapperTest is Test, GasHelpers {
 
@@ -805,6 +806,49 @@ contract L2NameWrapperTest is Test, GasHelpers {
 
     }
 
+    function test_018____upgrade_____________________RevertIfUpgradeContractIsNotSet() public{
+
+          // Set up a subname. The owner is account2.
+        bytes32 node = registerAndWrap(account2, address(0));
+
+        // Don't set the new NameWrapper as the upgraded contract. 
+
+        // Change the caller to account2.
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        // Make sure the function reverts with CannotUpgrade().
+        vm.expectRevert(abi.encodeWithSelector(CannotUpgrade.selector));
+
+        // Upgrade the name to the new contract.    
+        nameWrapper.upgrade("\x03sub\x03abc\x03eth\x00", "");
+    }
+
+    function test_018____upgrade_____________________RevertsWhenWrongAccountCallsUpgrade() public{
+
+          // Set up a subname. The owner is account2.
+        bytes32 node = registerAndWrap(account2, address(0));
+
+        // Deploy the new name wrapper.
+        L2UpgradedNameWrapperMock nameWrapperUpgraded = new L2UpgradedNameWrapperMock(
+            ens
+        );
+
+        // Set the new NameWrapper as the upgraded contract. 
+        nameWrapper.setUpgradeContract(INameWrapperUpgrade(address(nameWrapperUpgraded)));
+
+
+        // Change the caller to account2.
+        vm.stopPrank();
+        vm.startPrank(hacker);
+
+        // Make sure the function reverts with Unauthorized(bytes32 node, address addr).
+        vm.expectRevert(abi.encodeWithSelector(Unauthorized.selector, node, hacker));
+
+        // Upgrade the name to the new contract.    
+        nameWrapper.upgrade("\x03sub\x03abc\x03eth\x00", "");
+    }
+
     //Check to make sure that TTL can be set.
     function test_020____setFuses____________________SetFusesOnTheName() public {
         
@@ -897,6 +941,146 @@ contract L2NameWrapperTest is Test, GasHelpers {
         ( , uint32 fuses, ) = nameWrapper.getData(uint256(subnode));
 
         assertEq(fuses, PARENT_CANNOT_CONTROL);
+
+    }
+
+    function test_023____setChildFuses_______________RevertIfTheNameIsNotWrapped() public {
+
+        bytes32 node = registerAndWrap(account, address(0));
+
+        (bytes32 labelhash, ) = bytes("\x05subby\x03sub\x03abc\x03eth\x00").readLabel(0);
+
+        // Make sure the function reverts with NameIsNotWrapped().
+        vm.expectRevert(abi.encodeWithSelector(NameIsNotWrapped.selector));
+
+        // Set the fuses on the sub-subname.
+        nameWrapper.setChildFuses(
+            node,
+            labelhash,
+            PARENT_CANNOT_CONTROL,
+            0
+        );
+
+    }
+
+    function test_023____setChildFuses_______________RevertIfOwnerIsNotAuthorized() public {
+
+        bytes32 node = registerAndWrap(account, address(0));
+
+        // Create a sub-subname.
+        bytes32 subnode = nameWrapper.setSubnodeOwner(
+            node,
+            "subby",
+            account,
+            address(0), // no approved account
+            0, //TTL
+            uint64(block.timestamp) + oneYear
+        );
+
+        (bytes32 labelhash, ) = bytes("\x05subby\x03sub\x03abc\x03eth\x00").readLabel(0);
+
+        // Switch accounts to "hacker".
+        vm.stopPrank();
+        vm.startPrank(hacker);
+
+        //Revert if the owner is not authorized.
+        vm.expectRevert(abi.encodeWithSelector(Unauthorized.selector, node, hacker));
+
+        // Set the fuses on the sub-subname.
+        nameWrapper.setChildFuses(
+            node,
+            labelhash,
+            PARENT_CANNOT_CONTROL,
+            0
+        );
+
+    }
+
+    function test_023____setChildFuses_______________RevertIfOwnerIsNotAuthorizedAndParentIsTLD() public {
+
+        //Save the bytes of the name .unruggable in DNS format.
+        bytes memory name = bytes("\x0aunruggable\x00");
+
+        // Create a namhash of the name.
+        bytes32 node = name.namehash(0);
+
+        // Register the name in the ens registry to an account we don't control. 
+        ens.setSubnodeOwner(ROOT_NODE, keccak256(bytes("unruggable")), account2);
+
+        // Make sure the function reverts.
+        vm.expectRevert(abi.encodeWithSelector(Unauthorized.selector, node, account));
+
+        // Wrap a new TLD, .unruggable using DNS format.
+        nameWrapper.wrapTLD(
+            name, 
+            account, 
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME,
+            uint64(block.timestamp) + oneYear
+        );
+
+        // This time register the name to our account, but don't approve the name wrapper. 
+        ens.setSubnodeOwner(ROOT_NODE, keccak256(bytes("unruggable")), account);
+
+        // Don't approve the name wrapper to control the name.
+        ens.setApprovalForAll(address(nameWrapper), true);
+
+        // Wrap a new TLD, .unruggable using DNS format.
+        nameWrapper.wrapTLD(
+            name, 
+            account, 
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME,
+            uint64(block.timestamp) + oneYear
+        );
+
+        // Switch accounts to "hacker".
+        vm.stopPrank();
+        vm.startPrank(hacker);
+
+        //Revert if the owner is not authorized.
+        vm.expectRevert(abi.encodeWithSelector(Unauthorized.selector, node, hacker));
+
+        // Set the fuses on the sub-subname.
+        nameWrapper.setChildFuses(
+            ROOT_NODE,
+            keccak256(bytes("unruggable")),
+            CANNOT_SET_TTL,
+            0
+        );
+
+    }
+    function test_023____setChildFuses_______________RevertIfPARENT_CANNOT_CONTROLHasBeenBurned() public {
+
+        bytes32 parentNode = registerAndWrap(account, address(0));
+
+        // Create a sub-subname.
+        bytes32 node = nameWrapper.setSubnodeRecord(
+            parentNode,
+            "subby",
+            account2,
+            address(0), // no approved account
+            address(0), // no resolver
+            0, //TTL
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME, //fuses
+            uint64(block.timestamp) + oneYear
+        );
+
+        // Check to make sure that the fuses were set correctly.
+        ( , uint32 fuses, ) = nameWrapper.getData(uint256(node));
+
+        assertEq(fuses, PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME);
+
+        (bytes32 labelhash, ) = bytes("\x05subby\x03sub\x03abc\x03eth\x00").readLabel(0);
+
+        //Revert if the owner is not authorized.
+        vm.expectRevert(abi.encodeWithSelector(OperationProhibited.selector, node));
+
+        // Set the fuses on the sub-subname.
+        nameWrapper.setChildFuses(
+            parentNode,
+            labelhash,
+            CANNOT_SET_TTL,
+            0
+        );
 
     }
 
