@@ -1108,7 +1108,7 @@ contract L2NameWrapper is
         // Get the data from the node.
         (address oldOwner, , ) = super.getData(uint256(node));
 
-        // Check to see if the name was previously owned. 
+        // Check to see if the name was previously owned.
         if (oldOwner != address(0)) {
 
             // burn the token. 
@@ -1380,8 +1380,8 @@ contract L2NameWrapper is
             // Checks to see if any fuses are being burned.
             fuses != 0 &&  
 
-            // Check to see if PARENT_CANNOT_CONTROL is being burned.
-            fuses & PARENT_CANNOT_CONTROL != PARENT_CANNOT_CONTROL
+            // Check to see if PARENT_CANNOT_CONTROL and CANNOT_BURN_SUBNAMES is also being burned.
+            fuses & (PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME) != (PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME)
         ) {
             revert OperationProhibited(node);
         }
