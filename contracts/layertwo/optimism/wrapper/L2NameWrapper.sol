@@ -325,7 +325,7 @@ contract L2NameWrapper is
         address wrappedOwner,
         uint32 fuses,
         uint64 expiry
-    ) public {
+    ) public returns (bytes32 /* node */) {
         (bytes32 labelhash,) = name.readLabel(0);
         bytes32 node = _makeNode(ROOT_NODE, labelhash);
 
@@ -344,6 +344,8 @@ contract L2NameWrapper is
         
         // Set the data in the wrapper.
         _wrap(node, name, wrappedOwner, fuses, expiry);
+
+        return node;
     }
 
     /**

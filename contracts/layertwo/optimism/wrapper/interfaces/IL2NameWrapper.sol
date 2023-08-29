@@ -120,6 +120,14 @@ interface IL2NameWrapper is IERC1155 {
         address addr
     ) external view returns (bool);
 
+    // wrapTLD function 
+    function wrapTLD(
+        bytes calldata name,
+        address wrappedOwner,
+        uint32 fuses,
+        uint64 expiry
+    ) external returns (bytes32 /* node */);
+
     function setResolver(bytes32 node, address resolver) external;
 
     function setTTL(bytes32 node, uint64 ttl) external;
