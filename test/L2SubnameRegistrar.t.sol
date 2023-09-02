@@ -170,8 +170,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             IRenewalController(address(subnameRegistrar)), 
             3600, 
             type(uint64).max,
-            1, 
-            255 
+            1, // min chars
+            32 // max length of a subname 
         );
 
         // Set the pricing for the subname registrar. 
@@ -483,6 +483,9 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         // check if a 32 character name is available.
         assertEq(subnameRegistrar.available(bytes("\x20123456745678asftgesnytfwsdftgnrw\x03abc\x03eth\x00")), true);
 
+        // check if a 33 character name is available.
+        assertEq(subnameRegistrar.available(bytes("\x21123456745678asftgesnytfwsdftgnrwx\x03abc\x03eth\x00")), false);
+
         // add an extra null byte to the end of the name.
         vm.expectRevert(bytes("namehash: Junk at end of name"));
         subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00\x00"));
@@ -497,7 +500,6 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         // Names with the a zero length of the label in the DNS encoding.
         vm.expectRevert(bytes(""));
         subnameRegistrar.available(bytes("\x00\x03abc\x03eth\x00"));
-
 
     }
 

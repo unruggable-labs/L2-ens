@@ -134,8 +134,9 @@ contract L2SubnameRegistrar is
         uint256 charAmountsLength = pricingData[parentNode].charAmounts.length;
 
         // The price of the length of the label in USD/sec. (with 18 digits of precision).
-        uint256 unitPrice;
+        uint256 unitPrice; 
         
+        // If the charAmounts array has a length greater than 0 then use it, if not unitPrice will be 0.
         if (charAmountsLength > 0) {
             // Check to make sure the price for labelLength exists.
             // If not use the default price charAmounts[0].
@@ -156,10 +157,7 @@ contract L2SubnameRegistrar is
                 unitPrice = pricingData[parentNode].charAmounts[0];
 
             }
-        } else {
-            //If there is no pricing data, set the price to 0.
-            unitPrice = 0;
-        }
+        } 
 
         // Convert the unit price from USD to Wei.
         return (usdToWei(unitPrice * duration), unitPrice * duration);
@@ -194,16 +192,18 @@ contract L2SubnameRegistrar is
      * @param label Label as a string, e.g. "vault" or vault.vitalik.eth.
      */
 
-    function validLength(bytes32 node, string memory label) internal view returns (bool){
+    function validLength(bytes32 node, string memory label) internal view returns (bool /* valid */){
 
-        //NTS: Make sure to check what happens when string label is missing or zero length
+        //@audit - Make sure to check what happens when string label is missing or zero length
 
-        // The name is valid if the number of characters of the label is greater than the 
-        // minimum and the less than the maximum or the maximum is 0, return true.  
+        /**
+         * The name is valid if the number of characters of the label is greater than the 
+         * minimum and the less than the maximum or the maximum is 0, return true.  
+         */
+
         if (label.strlen() >= pricingData[node].minChars){
 
-            // If the maximum characters is set then check to make sure the label is 
-            // shorter or equal to it.  
+            // If the maximum characters is set then check to make sure the label is shorter or equal to it.  
             if (pricingData[node].maxChars != 0 && label.strlen() > pricingData[node].maxChars){
                 return false; 
             } else {
@@ -391,7 +391,7 @@ contract L2SubnameRegistrar is
         // the authorization of this contract, then this function will still return true, but
         // registration will not be possible. 
 
-        return validLength(node, label) && 
+        return validLength(parentNode, label) && 
             ens.owner(node) == address(0) &&
             pricingData[parentNode].offerSubnames;
 
