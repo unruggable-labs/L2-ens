@@ -24,6 +24,9 @@ error UnexpiredCommitmentExists(bytes32 commitment);
 error ZeroLengthLabel();
 error InvalidDuration(uint256 duration);
 error WrongNumberOfCharsForRandomName(uint256 numChars);
+error WrongNumberOfChars(string label);
+error NameNotAvailable(bytes name);
+error InsufficientValue();
 
 contract SubnameRegistrarTest is Test, GasHelpers {
 
@@ -692,6 +695,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         vm.startPrank(account);
 
     }
+
     function test_015____register____________________RegistringForTooShortOrLongFails() public{
 
         bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
@@ -775,6 +779,177 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         vm.startPrank(account);
 
     }
+
+    function test_015____register____________________CannotRegisterSubnamesWhenNotOffered() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        registerAndWrap(account2);
+
+        // Disable offering of subnames.
+        subnameRegistrar.setParams(
+            parentNode, 
+            false, 
+            IRenewalController(address(subnameRegistrar)), 
+            3600, 
+            type(uint64).max,
+            1, // min chars
+            32 // max length of a subname 
+        );
+
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        bytes32 commitment = subnameRegistrar.makeCommitment(
+            bytes("\x08coolname\x03abc\x03eth\x00"), 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        subnameRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Revert if the registration is not offered for subnames. 
+        vm.expectRevert( abi.encodeWithSelector(NameNotAvailable.selector, bytes("\x08coolname\x03abc\x03eth\x00")));
+
+        // Register the subname, and overpay with 1 ETH.
+        subnameRegistrar.register{value: 1000000000000000000}(
+            "\x08coolname\x03abc\x03eth\x00",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 //fuses 
+        );
+
+    }
+
+    function test_015____register____________________LabelIsNotTooLong() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        registerAndWrap(account2);
+
+         // Set the caller to _account and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+        bytes32 commitment = subnameRegistrar.makeCommitment(
+            bytes("\x21123456745678asftgesnytfwsdftgnrwx\x03abc\x03eth\x00"), 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        subnameRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Expect to revert if the duration is too long with a custom error InvalidDuration
+        vm.expectRevert( abi.encodeWithSelector(WrongNumberOfChars.selector, "123456745678asftgesnytfwsdftgnrwx"));
+
+        // Register the subname, and overpay with 1 ETH.
+        subnameRegistrar.register{value: 1000000000000000000}(
+            "\x21123456745678asftgesnytfwsdftgnrwx\x03abc\x03eth\x00",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 //fuses 
+        );
+    }
+
+    function test_015____register____________________ExpiryIsTooLongSetToMaxExpiry() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        registerAndWrap(account2);
+
+        // Disable offering of subnames.
+        subnameRegistrar.setParams(
+            parentNode, 
+            true, 
+            IRenewalController(address(subnameRegistrar)), 
+            3600, 
+            3 * oneYear,
+            1, // min chars
+            32 // max length of a subname 
+        );
+
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        bytes32 commitment = subnameRegistrar.makeCommitment(
+            bytes("\x08coolname\x03abc\x03eth\x00"), 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        subnameRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Register the subname, and overpay with 1 ETH.
+        subnameRegistrar.register{value: 1000000000000000000}(
+            "\x08coolname\x03abc\x03eth\x00",
+            account2,
+            accountReferrer, //referrer
+            twoYears + GRACE_PERIOD + oneDay,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 //fuses 
+        );
+
+        // Get the expiry of the subname.
+        (,,uint256 expiry) = nameWrapper.getData(uint256(bytes("\x08coolname\x03abc\x03eth\x00").namehash(0)));
+
+        // Make sure the expiry is set to one year.
+        assertEq(expiry, block.timestamp + twoYears + GRACE_PERIOD - 122); // 122 becuase we skip(61) twice. 
+    }
+
+    function test_014____register____________________SendEnoughEther() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes32 node = registerAndWrap(account2);
+
+        assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
+        assertEq(subnameRegistrar.available(bytes("\x08coolname\x03abc\x03eth\x00")), true);
+
+         // Set the caller to _account and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+        bytes32 commitment = subnameRegistrar.makeCommitment(
+            "\x08coolname\x03abc\x03eth\x00", 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        subnameRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Revert with InsufficientValue() if we don't send enough ether.
+        vm.expectRevert( abi.encodeWithSelector(InsufficientValue.selector));
+
+        // Register the subname, pay only one wei.
+        subnameRegistrar.register{value: 1}(
+            "\x08coolname\x03abc\x03eth\x00",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 /* fuses */
+        );
+
+    }
+
     function test_016____registerUnruggable__________RegisterADotUnruggableName() public{
 
         bytes32 node = subnameRegistrar.registerUnruggable(account, 3, 12, 57654674567);

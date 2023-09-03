@@ -477,7 +477,7 @@ contract L2SubnameRegistrar is
             (string memory label, ) = name.getFirstLabel();
 
             // Check to make sure the label is a valid length.
-            if(!validLength(node, label)){
+            if(!validLength(parentNode, label)){
                 revert WrongNumberOfChars(label);
             }
         }
