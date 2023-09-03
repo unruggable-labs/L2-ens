@@ -20,7 +20,6 @@ import "forge-std/console.sol";
 error CommitmentTooNew(bytes32 commitment);
 error CommitmentTooOld(bytes32 commitment);
 error NameNotAvailable(bytes name);
-error DurationTooShort(uint256 duration);
 error UnexpiredCommitmentExists(bytes32 commitment);
 error InsufficientValue();
 error UnauthorizedAddress(bytes32 node);
@@ -47,7 +46,6 @@ contract L2SubnameRegistrar is
     using Address for address payable;
     using BytesUtilsSub for bytes;
 
-    uint256 public constant MIN_REGISTRATION_DURATION = 28 days;
     bytes32 private constant ETH_NODE =
         0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
     bytes32 private constant UNRUGGABLE_TLD_NODE = 
@@ -209,9 +207,7 @@ contract L2SubnameRegistrar is
             } else {
                 return true;
             }
-        } else {
-            return false; 
-        }
+        } // @audit - else the default return value is false? Just make sure this is not an issue. 
     }
 
     /**
@@ -240,8 +236,11 @@ contract L2SubnameRegistrar is
             revert UnauthorizedAddress(parentNode);
         }
 
-        // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
+        /**
+         * Check to make sure the caller is authorised and the parentNode is wrapped in the 
+         * Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
+         */
+
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
             !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
@@ -267,8 +266,11 @@ contract L2SubnameRegistrar is
         uint256[] calldata _charAmounts
     ) public {
 
-        // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
+        /**
+         * Check to make sure the caller is authorised and the parentNode is wrapped in the 
+         * Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
+         */
+
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
             !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
@@ -288,7 +290,7 @@ contract L2SubnameRegistrar is
      * @param charLength The character length, e.g. 3 would be for three characters. Use 0 for the default amount.
      */
 
-    function getPriceDataForLength(bytes32 parentNode, uint16 charLength) public view returns (uint256){
+    function getPriceDataForLength(bytes32 parentNode, uint256 charLength) public view returns (uint256){
         return pricingData[parentNode].charAmounts[charLength];
     }
 
@@ -305,8 +307,11 @@ contract L2SubnameRegistrar is
         uint256 charAmount
     ) public {
 
-        // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
+        /**
+         * Check to make sure the caller is authorised and the parentNode is wrapped in the 
+         * Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
+         */
+
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
             !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
@@ -727,10 +732,6 @@ contract L2SubnameRegistrar is
         }
 
         delete (commitments[commitment]);
-
-        if (duration < MIN_REGISTRATION_DURATION) {
-            revert DurationTooShort(duration);
-        }
     }
 
     function _makeNode(bytes32 node, bytes32 labelhash)
