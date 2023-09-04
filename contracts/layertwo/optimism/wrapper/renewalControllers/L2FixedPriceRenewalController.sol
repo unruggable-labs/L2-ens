@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {INameWrapper} from "ens-contracts/wrapper/INameWrapper.sol";
+import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
 import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
 import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
@@ -24,7 +24,7 @@ contract L2FixedPriceRenewalController is
     IAggregatorInterface public usdOracle;
 
     constructor(
-        INameWrapper _nameWrapper,
+        IL2NameWrapper _nameWrapper,
         IAggregatorInterface _usdOracle,
         uint256 _usdPrice
     ) L2RenewalControllerBase(_nameWrapper){

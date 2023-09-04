@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {INameWrapper} from "ens-contracts/wrapper/INameWrapper.sol";
+import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
 import {Balances} from "optimism/wrapper/Balances.sol";
@@ -35,7 +35,7 @@ abstract contract L2RenewalControllerBase is
     address[] public nameWrappers = new address[](1);
 
     constructor(
-        INameWrapper _nameWrapper
+        IL2NameWrapper _nameWrapper
     ) {
 
         nameWrappers[0] = address(_nameWrapper);
@@ -108,11 +108,11 @@ abstract contract L2RenewalControllerBase is
         }
 
         // Get the owners of the name and the parent name.
-        address parentOwner = INameWrapper(nameWrappers[nameWrapperV]).ownerOf(uint256(parentNode));
-        address nodeOwner = INameWrapper(nameWrappers[nameWrapperV]).ownerOf(uint256(node));
+        address parentOwner = IL2NameWrapper(nameWrappers[nameWrapperV]).ownerOf(uint256(parentNode));
+        address nodeOwner = IL2NameWrapper(nameWrappers[nameWrapperV]).ownerOf(uint256(node));
 
         // Check to make sure the caller (msg.sender) is authorised to renew the name.
-        if( msg.sender != nodeOwner && !INameWrapper(nameWrappers[nameWrapperV]).isApprovedForAll(nodeOwner, msg.sender)){
+        if( msg.sender != nodeOwner && !IL2NameWrapper(nameWrappers[nameWrapperV]).isApprovedForAll(nodeOwner, msg.sender)){
             revert UnauthorizedAddress(node);
         }
 
@@ -121,11 +121,11 @@ abstract contract L2RenewalControllerBase is
         // Create a block to solve a stack too deep error.
         {
             // Get the previous expiry. 
-            (,, uint64 nodeExpiry) = INameWrapper(nameWrappers[nameWrapperV]).getData(uint256(node));
+            (,, uint64 nodeExpiry) = IL2NameWrapper(nameWrappers[nameWrapperV]).getData(uint256(node));
 
             // Check to see if the duration is too long and
             // if it is set the duration.
-            (,, uint64 parentExpiry) = INameWrapper(nameWrappers[nameWrapperV]).getData(uint256(parentNode));
+            (,, uint64 parentExpiry) = IL2NameWrapper(nameWrappers[nameWrapperV]).getData(uint256(parentNode));
             if (nodeExpiry + duration > parentExpiry) {
                 duration = parentExpiry - nodeExpiry;
             }
@@ -168,7 +168,7 @@ abstract contract L2RenewalControllerBase is
             totalBalance += priceEth - ownerAmount;
         }
 
-        INameWrapper(nameWrappers[nameWrapperV]).extendExpiry(
+        IL2NameWrapper(nameWrappers[nameWrapperV]).extendExpiry(
             parentNode,
             labelhash,
             expiry
