@@ -23,7 +23,8 @@ import {IAddrResolver} from "ens-contracts/resolvers/profiles/IAddrResolver.sol"
 import {L2FixedPriceRenewalController} from "optimism/wrapper/renewalControllers/L2FixedPriceRenewalController.sol";
 import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
 import {IFixedPriceRenewalController} from "optimism/wrapper/interfaces/rCInterfaces/IFixedPriceRenewalController.sol";
-import {UnauthorizedAddress} from "optimism/wrapper/L2RenewalControllerBase.sol";
+import {UnauthorizedAddress, InsufficientValue} from "optimism/wrapper/L2RenewalControllerBase.sol";
+import {IL2NameWrapperUpgrade} from "optimism/wrapper/interfaces/IL2NameWrapperUpgrade.sol";
 
 error ZeroLengthLabel();
 
@@ -317,6 +318,103 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
             accountReferrer,
             oneYear
         );
+    }
+
+    // Revert if too little money was sent to renew the subname.
+    function test_002____renew_________________________RevertsIfNotEnoughMoney() public {
+
+        bytes32 node = registerAndWrap(account2);
+
+        // Switch to account2.
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        // Get the expiry of the subname using getData.
+        (, , uint64 expiry) = nameWrapper.getData(uint256(node));
+
+        // Advance the timestamp to one second before the name expires.
+        skip(expiry - block.timestamp - 1);
+
+        // Make sure it reverts if not enough money is sent.
+        vm.expectRevert( abi.encodeWithSelector(InsufficientValue.selector));
+
+        // Renew the subname, with only 1 wei, which is not enough.
+        fixedPriceRenewalController.renew{value: 1}(
+            "\x03xyz\x03abc\x03eth\x00",
+            accountReferrer,
+            oneYear
+        );
+    }
+
+
+    // Test to make sure that if we renew for 3 years, the expiry is actually set to the parent expiry.
+    function test_002____renew_________________________SetsTheExpiryToTheParentExpiry() public {
+
+        bytes32 node = registerAndWrap(account2);
+
+        // Switch to account2.
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        // Get the expiry of the subname using getData.
+        (, , uint64 expiry) = nameWrapper.getData(uint256(node));
+
+        // Advance the timestamp to one second before the name expires.
+        skip(expiry - block.timestamp - 1);
+
+        // Renew the subname, with 3 years.
+        fixedPriceRenewalController.renew{value: 1000000000000000000}(
+            "\x03xyz\x03abc\x03eth\x00",
+            accountReferrer,
+            3 * oneYear
+        );
+
+        // Check to make sure the subname has been renewed using getData.
+        (, , uint64 newExpiry) = nameWrapper.getData(uint256(node));
+
+        // Check to make sure the new expiry is correct (We need subtract 61 because of skip).
+        assertEq(newExpiry, expiry + oneYear + GRACE_PERIOD - 61);
+
+    }
+
+    function test_002____addNextNameWrapperVersion______AddsTheNextNameWrapperVersion() public {
+
+        // Create a new name wrapper.
+        L2NameWrapper newNameWrapper = new L2NameWrapper(
+            ens, 
+            IMetadataService(address(staticMetadataService))
+        );
+
+        // Add the name wrapper to the renewal controller.
+        fixedPriceRenewalController.addNextNameWrapperVersion(IL2NameWrapperUpgrade(address(newNameWrapper)));
+
+        // Check to make sure the name wrapper has been added.
+        assertEq(address(fixedPriceRenewalController.nameWrappers(1)), address(address(newNameWrapper)));
+
+    }
+
+    function test_002____setUSDPrice____________________SetsTheUSDPrice() public {
+
+        // Set the USD price.
+        fixedPriceRenewalController.setUSDPrice(1000000000000000000);
+
+        // Check to make sure the price is correct.
+        assertEq(fixedPriceRenewalController.usdPrice(), 1000000000000000000);
+
+    }
+
+    // Test the updateOracle function.
+    function test_002____updateOracle___________________UpdatesTheOracle() public {
+
+        // Create a new USD oracle.
+        USDOracleMock newUsdOracle = new USDOracleMock();
+
+        // Set the oracle address.
+        fixedPriceRenewalController.updateOracle(newUsdOracle);
+
+        // Check to make sure the oracle address is correct.
+        assertEq(address(fixedPriceRenewalController.usdOracle()), address(newUsdOracle));
+
     }
 
     function test_003____getPrice_______________________GetsThePriceOfTheRenewal() public {
