@@ -2,21 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {
-        
-        L2SubnameRegistrar, 
-        UnauthorizedAddress, // import errors 
-        CommitmentTooNew,                   
-        CannotSetNewCharLengthAmounts,      
-        InsufficientValue,
-        NameNotAvailable,
-        WrongNumberOfChars,
-        WrongNumberOfCharsForRandomName,
-        InvalidDuration,
-        UnexpiredCommitmentExists,
-        CommitmentTooOld
-        
-        } from "optimism/wrapper/L2SubnameRegistrar.sol";
+import {L2SubnameRegistrar} from "optimism/wrapper/L2SubnameRegistrar.sol";
 import {ISubnameRegistrar} from "optimism/wrapper/interfaces/ISubnameRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
@@ -28,7 +14,6 @@ import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
 import {USDOracleMock} from "optimism/wrapper/mocks/USDOracleMock.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
 
 import {IERC1155MetadataURI} from "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
 import {GasHelpers} from "./GasHelpers.sol";
@@ -38,6 +23,7 @@ import {IAddrResolver} from "ens-contracts/resolvers/profiles/IAddrResolver.sol"
 import {L2FixedPriceRenewalController} from "optimism/wrapper/renewalControllers/L2FixedPriceRenewalController.sol";
 import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
 import {IFixedPriceRenewalController} from "optimism/wrapper/interfaces/rCInterfaces/IFixedPriceRenewalController.sol";
+import {UnauthorizedAddress} from "optimism/wrapper/L2RenewalControllerBase.sol";
 
 error ZeroLengthLabel();
 
@@ -64,6 +50,7 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
     address account2 = 0x0000000000000000000000000000000000004612;
     address accountReferrer = 0x0000000000000000000000000000000000005627;
     address trustedEthAddress = 0x0000000000000000000000000000000000009568;
+    address hacker = 0x0000000000000000000000000000000000001101; 
 
     // Set a dummy address for the renewal controller.
     IRenewalController renewalController = IRenewalController(address(0x0000000000000000000000000000000000000007));
@@ -256,69 +243,102 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
     function test_001____supportsInterface___________SupportsCorrectInterfaces() public {
 
         // Check for the ISubnameWrapper interface.  
-        assertEq(publicResolver.supportsInterface(type(IAddrResolver).interfaceId), true);
+        assertEq(fixedPriceRenewalController.supportsInterface(type(IRenewalController).interfaceId), true);
 
-        // @audit - there are lot of interfaces, just doing this one for now. 
+        // Check for the IERC165 interface.
+        assertEq(fixedPriceRenewalController.supportsInterface(type(IERC165).interfaceId), true);
+
+        // Check for the IFixedPriceRenewalController interface.
+        assertEq(fixedPriceRenewalController.supportsInterface(type(IFixedPriceRenewalController).interfaceId), true);
 
     }
 
-    function test_014____setAddr_____________________SetsTheEthAddressOfTheName() public{
+    function test_002____renew_________________________RenewsTheSubname() public {
 
-        bytes32 parentNode = registerAndWrap(account2);
+        bytes32 node = registerAndWrap(account2);
 
-        assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
-        assertEq(subnameRegistrar.available(bytes("\x08coolname\x03abc\x03eth\x00")), true);
-
-         // Set the caller to _account and give the account 10 ETH.
+        // Switch to account2.
         vm.stopPrank();
         vm.startPrank(account2);
-        vm.deal(account2, 10000000000000000000);
 
-        bytes32 commitment = subnameRegistrar.makeCommitment(
-            "\x08coolname\x03abc\x03eth\x00", 
-            account2, 
-            bytes32(uint256(0x7878))
+        // Get the expiry of the subname using getData.
+        (, , uint64 expiry) = nameWrapper.getData(uint256(node));
+
+        // Advance the timestamp to one second before the name expires.
+        skip(expiry - block.timestamp - 1);
+
+        // Get the balance of account2.
+        uint256 balance = address(account2).balance;
+
+        // Renew the subname, with 1 Eth overpayment.
+        fixedPriceRenewalController.renew{value: 1000000000000000000}(
+            "\x03xyz\x03abc\x03eth\x00",
+            accountReferrer,
+            oneYear
         );
 
-        subnameRegistrar.commit(commitment);
+        // Check to make sure the subname has been renewed using getData.
+        (, , uint64 newExpiry) = nameWrapper.getData(uint256(node));
 
-        // Advance the timestamp by 61 seconds.
-        skip(61);
+        // Check to make sure the new expiry is correct.
+        assertEq(newExpiry, expiry + oneYear);
 
-        // Register the subname, and overpay with 1 ETH.
-        subnameRegistrar.register{value: 1000000000000000000}(
-            "\x08coolname\x03abc\x03eth\x00",
-            account2,
-            accountReferrer, //referrer
-            oneYear,
-            bytes32(uint256(0x7878)), 
-            address(publicResolver), 
-            0 /* fuses */
-        );
+        // Get the new balance of account2.
+        uint256 newBalance = address(account2).balance;
 
-        bytes32 node = bytes("\x08coolname\x03abc\x03eth\x00").namehash(0);
+        // Check to make sure the balance of account2 has decreased. 
+        assertEq(newBalance < balance, true);
 
-        // Check to make sure the subname is owned account2 in the Name Wrapper.
-        assertEq(nameWrapper.ownerOf(uint256(node)), account2);
-        
-        // Set an ethereum address on the public resolver for account2
-        publicResolver.setAddr(node, account2);
+    }
 
-        // Check to make sure the public resolver has the correct address for the subname.
-        assertEq(publicResolver.addr(node), account2);
+    function test_002____renew_________________________RevertsIfNotTheOwnerOrApproved() public {
 
-        // Approve accountReferrer to manage the subname in the public resolver.
-        publicResolver.approve(node, accountReferrer, true);
+        bytes32 node = registerAndWrap(account2);
 
-        // Switch to accountReferrer.
+        // Switch to account2.
         vm.stopPrank();
-        vm.startPrank(accountReferrer);
+        vm.startPrank(hacker);
 
-        // Set the address for the subname in the public resolver.
-        publicResolver.setAddr(node, accountReferrer);
+        // Give the hacker 10 ETH.
+        vm.deal(hacker, 10000000000000000000);
 
-        // Check to make sure the public resolver has the correct address for the subname.
-        assertEq(publicResolver.addr(node), accountReferrer);
+        // Get the expiry of the subname using getData.
+        (, , uint64 expiry) = nameWrapper.getData(uint256(node));
+
+        // Advance the timestamp to one second before the name expires.
+        skip(expiry - block.timestamp - 1);
+
+        // Make sure it reverts if not the owner or approved.
+        vm.expectRevert( abi.encodeWithSelector(UnauthorizedAddress.selector, node));
+
+        // Renew the subname, with 1 Eth overpayment.
+        fixedPriceRenewalController.renew{value: 1000000000000000000}(
+            "\x03xyz\x03abc\x03eth\x00",
+            accountReferrer,
+            oneYear
+        );
+    }
+
+    function test_003____getPrice_______________________GetsThePriceOfTheRenewal() public {
+
+        bytes32 node = registerAndWrap(account2);
+
+        // Switch to account2.
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        // Get the price of the renewal.
+        (uint256 priceEth, uint256 priceUsd) = fixedPriceRenewalController.rentPrice(
+            "\x03xyz\x03abc\x03eth\x00",
+            1
+        );
+
+        // Check to make sure the price is correct.
+        assertEq(priceUsd, 158548959918);
+
+        // @audit - We are not checking the Eth price, here, the only way to check it is to redo the calculation.
+        // Maybe just make sure it makes sense. 
+
     }
 
 }
