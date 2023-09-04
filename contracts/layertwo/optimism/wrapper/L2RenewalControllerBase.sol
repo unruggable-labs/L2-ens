@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
-import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
+import {IL2NameWrapperUpgrade} from "optimism/wrapper/interfaces/IL2NameWrapperUpgrade.sol";
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
 import {Balances} from "optimism/wrapper/Balances.sol";
 import {BytesUtilsSub} from "./BytesUtilsSub.sol";
@@ -48,7 +48,7 @@ abstract contract L2RenewalControllerBase is
      */
 
     function addNextNameWrapperVersion(
-        INameWrapperUpgrade _nameWrapper
+        IL2NameWrapperUpgrade _nameWrapper
     ) public onlyOwner {
 
         nameWrappers.push(address(_nameWrapper));
@@ -123,8 +123,7 @@ abstract contract L2RenewalControllerBase is
             // Get the previous expiry. 
             (,, uint64 nodeExpiry) = IL2NameWrapper(nameWrappers[nameWrapperV]).getData(uint256(node));
 
-            // Check to see if the duration is too long and
-            // if it is set the duration.
+            // Check to see if the duration is too long and if it is set the duration.
             (,, uint64 parentExpiry) = IL2NameWrapper(nameWrappers[nameWrapperV]).getData(uint256(parentNode));
             if (nodeExpiry + duration > parentExpiry) {
                 duration = parentExpiry - nodeExpiry;
