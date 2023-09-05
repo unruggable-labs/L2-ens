@@ -221,7 +221,7 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
         subnameRegistrar.register{value: 1000000000000000000}(
             "\x03xyz\x03abc\x03eth\x00",
             _account,
-            account, //referrer
+            accountReferrer, 
             oneYear,
             bytes32(uint256(0x4453)), 
             address(publicResolver), 
@@ -438,5 +438,93 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
         // Maybe just make sure it makes sense. 
 
     }
+
+    // Test the withdraw function.
+    function test_004____withdraw_______________________WithdrawsTheBalance() public {
+
+        // Switch to accountReferrer.
+        vm.stopPrank();
+        vm.startPrank(accountReferrer);
+
+        // Get the balance of account. 
+        uint256 balance = address(accountReferrer).balance;
+
+        // console log the balance of accountReferrer.
+        console.log("accountReferrer balance: %s", balance);
+
+        /**
+         * Set the percentage of the sale that goes to the referrer to 1%. We
+         * are using two decimal places of percision, so 1% is 100.
+         */
+
+        subnameRegistrar.setReferrerCut(100);
+
+        // Make sure the referrer cut is correct.
+        assertEq(subnameRegistrar.referrerCuts(accountReferrer), 100);
+
+        // Switch to account.
+        vm.stopPrank();
+        vm.startPrank(account);
+
+        // Register a subname, the name will be registered from account2 and owened by account2.
+        bytes32 node = registerAndWrap(account2);
+
+        // Switch to accountReferrer.
+        vm.stopPrank();
+        vm.startPrank(accountReferrer);
+
+        // Withdraw the balance of account. 
+        subnameRegistrar.withdraw();
+
+        // Get the new balance of account.
+        uint256 newBalance = address(accountReferrer).balance;
+
+        // console log the new balance of accountReferrer.
+        console.log("accountReferrer balance: %s", newBalance);
+
+        // Check to make sure that the balance increased.
+        assertEq(newBalance > balance, true);
+
+        // @audit - This just checks to see if the balance increased, but not by how much. 
+
+    } 
+
+        function test_004____withdraw_______________________RevertsIfBalanceIsZero() public {
+
+        // Register a subname.
+        bytes32 node = registerAndWrap(account2);
+
+        // Get the balance of account. 
+        uint256 balance = address(account).balance;
+
+        // Withdraw the balance of account. 
+        subnameRegistrar.withdraw();
+
+        // Get the new balance of account.
+        uint256 newBalance = address(account).balance;
+
+        // Check to make sure that the balance increased.
+        assertEq(newBalance > balance, true);
+
+        // @audit - This just checks to see if the balance increased, but not by how much. 
+
+        // Withdraw the balance of account again and this time make sure it reverts. 
+        vm.expectRevert(bytes("Owner balance is 0"));
+
+        // Call withdraw again. 
+        subnameRegistrar.withdraw();
+
+    } 
+
+    function test_004____setOwnerCut____________________SetsTheOwnerCut() public {
+
+        // Set the owner cut to 1%.
+        subnameRegistrar.setOwnerCut(100);
+
+        // Check to make sure the owner cut is correct.
+        assertEq(subnameRegistrar.ownerCut(), 100);
+
+    }
+
 
 }

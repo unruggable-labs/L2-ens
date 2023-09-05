@@ -86,6 +86,8 @@ abstract contract Balances is Ownable {
 
     /**
      * @notice A function to set the referrer cut percentage for a specific referrer.
+     * @dev We are using two decimal places of percision for the referrer cut percentage, 
+     *      i.e. 1% = 100, 10% = 1000.
      * @param _referrerCut The percentage cut given to the referrer (0-10%).
      */
 
