@@ -7,7 +7,7 @@ import {ENS} from "ens-contracts/registry/ENS.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
-import {IL2NameWrapper, CANNOT_UNWRAP, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
 import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
@@ -47,7 +47,6 @@ contract L2EthRegistrar is
     using BytesUtilsSub for bytes;
 
     uint64 private constant GRACE_PERIOD = 90 days;
-    uint256 public constant MIN_REGISTRATION_DURATION = 28 days;
     bytes32 private constant ETH_NODE =
         0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
     uint64 private constant MAX_EXPIRY = type(uint64).max;
@@ -98,13 +97,14 @@ contract L2EthRegistrar is
     /**
      * @notice Gets the total cost of rent in wei, from the unitPrice, i.e. USD, and duration.
      * @param duration The amount of time the name will be rented for/extended in years. 
-     * @return The rent price for the duration in Wei and USD. 
+     * @return weiPrice The rent price for the duration in Wei 
+     * @return usdPrice The rent price for the duration in USD 
      */
 
     function rentPrice(bytes memory name, uint256 duration)
         public
         view
-        returns (uint256, uint256) // (uint256 weiPrice, uint256 usdPrice) 
+        returns (uint256 weiPrice, uint256 usdPrice) 
     {
 
         ( , uint256 labelLength) = name.getFirstLabel();
@@ -338,8 +338,6 @@ contract L2EthRegistrar is
             revert InvalidDuration(duration); 
         }
 
-        address parentOwner = nameWrapper.ownerOf(uint256(ETH_NODE));
-
         // Check to make sure the label is a valid length.
         if(!validLength(label)){
             revert WrongNumberOfChars(label);
@@ -388,7 +386,7 @@ contract L2EthRegistrar is
             label, 
             owner,
             address(0), // no approved account
-            expires,
+            duration,
             resolver,
             fuses
         );
@@ -435,7 +433,6 @@ contract L2EthRegistrar is
         bytes memory name = _addLabel(label, "\x03eth\x00");
 
         // Get the owners of the name and the parent name.
-        address parentOwner = nameWrapper.ownerOf(uint256(ETH_NODE));
         address nodeOwner = nameWrapper.ownerOf(uint256(node));
 
         // remove the access control check, because anyone can renew a .eth 2LD name. 
@@ -443,11 +440,8 @@ contract L2EthRegistrar is
             revert UnauthorizedAddress(node);
         }
 
-        uint64 expiry;
-
         // Create a block to solve a stack too deep error.
         {
-            // Get the previous expiry. 
             (,, uint64 nodeExpiry) = nameWrapper.getData(uint256(node));
 
             // Check to see if the duration is too long and
@@ -456,9 +450,6 @@ contract L2EthRegistrar is
             if (nodeExpiry + duration > parentExpiry) {
                 duration = parentExpiry - nodeExpiry;
             }
-
-            // Set the expiry
-            expiry =  uint64(nodeExpiry + duration);
         }
 
         // Get the price for the duration.
@@ -485,13 +476,12 @@ contract L2EthRegistrar is
             totalBalance += referrerAmount;
         }
 
-        nameWrapper.extendExpiry(
-            ETH_NODE,
+        nameWrapper.renewEth2LD(
             labelhash,
-            expiry
+            duration
         );
 
-        emit NameRenewed(label, priceEth, expiry);
+        emit EthNameRenewed(label, priceEth, duration);
 
         // If the caller paid too much refund the amount overpaid. 
         if (msg.value > priceEth) {
@@ -557,7 +547,7 @@ contract L2EthRegistrar is
 
         delete (commitments[commitment]);
 
-        if (duration < MIN_REGISTRATION_DURATION) {
+        if (duration < minRegistrationDuration) {
             revert DurationTooShort(duration);
         }
     }

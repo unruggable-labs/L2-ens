@@ -20,7 +20,7 @@ if (process.env.DEPLOYER_KEY) {
   ]
 }
 
-export const ensContractsPath       = '../ens-contracts/deployments/'
+export const ensContractsPath       = './lib/ens-contracts/deployments/'
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -73,6 +73,13 @@ module.exports = {
       chainId: 1,
       accounts: real_accounts,
     },
+    "optimism-goerli": {
+      url: `${process.env.OPTIMISM_GOERLI_RPC_URL}`,
+      tags: ['use_root'],
+      chainId: 420,
+      accounts: real_accounts,
+      gasPrice: 50000000000
+    },
   },
   abiExporter: {
     path: './build/contracts',
@@ -100,11 +107,11 @@ module.exports = {
     },
   },
   external: {
-    deployments: {
+    /*deployments: {
       localhost: [ensContractsPath + "/localhost"],
       goerli:    [ensContractsPath + "/goerli"],
       mainnet:   [ensContractsPath + "/mainnet"],
-    },
+    },*/
   },
   etherscan: {
     apiKey: {

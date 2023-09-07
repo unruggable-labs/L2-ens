@@ -49,7 +49,7 @@ interface ISubnameRegistrar {
 
     function getPriceDataForLength(
         bytes32 parentNode, 
-        uint16 charLength
+        uint256 charLength
     ) external view returns (uint256);
 
     function updatePriceForCharLength(

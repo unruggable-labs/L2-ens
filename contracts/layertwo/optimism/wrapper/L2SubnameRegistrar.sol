@@ -7,27 +7,29 @@ import {ENS} from "ens-contracts/registry/ENS.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
-import {IL2NameWrapper, CANNOT_UNWRAP, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
 import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
 import {Balances} from "optimism/wrapper/Balances.sol";
 import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
 
+//import foundry console logging.
+import "forge-std/console.sol";
+
 error CommitmentTooNew(bytes32 commitment);
 error CommitmentTooOld(bytes32 commitment);
 error NameNotAvailable(bytes name);
-error DurationTooShort(uint256 duration);
-error ResolverRequiredWhenDataSupplied();
 error UnexpiredCommitmentExists(bytes32 commitment);
 error InsufficientValue();
 error UnauthorizedAddress(bytes32 node);
 error MaxCommitmentAgeTooLow();
 error MaxCommitmentAgeTooHigh();
 error WrongNumberOfChars(string label);
-error NoPricingData();
 error CannotSetNewCharLengthAmounts();
 error InvalidDuration(uint256 duration);
+error RandomNameNotFound();
+error WrongNumberOfCharsForRandomName(uint256 numChars);
 
 /**
  * @dev A registrar controller for registering and renewing names at fixed cost.
@@ -44,9 +46,10 @@ contract L2SubnameRegistrar is
     using Address for address payable;
     using BytesUtilsSub for bytes;
 
-    uint256 public constant MIN_REGISTRATION_DURATION = 28 days;
     bytes32 private constant ETH_NODE =
         0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
+    bytes32 private constant UNRUGGABLE_TLD_NODE = 
+        0xc951937fc733cfe92dd3ea5d53048d4f39082c7e84dfc0501b03d5e2dd672d5d;
     uint64 private constant MAX_EXPIRY = type(uint64).max;
     uint256 public immutable minCommitmentAge;
     uint256 public immutable maxCommitmentAge;
@@ -86,6 +89,7 @@ contract L2SubnameRegistrar is
         IL2NameWrapper _nameWrapper,
         IAggregatorInterface _usdOracle
     ) {
+
         if (_maxCommitmentAge <= _minCommitmentAge) {
             revert MaxCommitmentAgeTooLow();
         }
@@ -111,13 +115,14 @@ contract L2SubnameRegistrar is
      * @notice Gets the total cost of rent in wei, from the unitPrice, i.e. USD, and duration.
      * @param name The name in DNS format, e.g. vault.vitalik.eth
      * @param duration The amount of time the name will be rented for/extended in years. 
-     * @return The rent price for the duration in Wei and USD. 
+     * @return weiPrice The rent price for the duration in Wei 
+     * @return usdPrice The rent price for the duration in USD 
      */
 
     function rentPrice(bytes calldata name, uint256 duration)
         public
         view
-        returns (uint256, uint256) // (uint256 weiPrice, uint256 usdPrice) 
+        returns (uint256 weiPrice, uint256 usdPrice) 
     {
 
         ( , uint256 labelLength) = name.getFirstLabel();
@@ -127,8 +132,9 @@ contract L2SubnameRegistrar is
         uint256 charAmountsLength = pricingData[parentNode].charAmounts.length;
 
         // The price of the length of the label in USD/sec. (with 18 digits of precision).
-        uint256 unitPrice;
+        uint256 unitPrice; 
         
+        // If the charAmounts array has a length greater than 0 then use it, if not unitPrice will be 0.
         if (charAmountsLength > 0) {
             // Check to make sure the price for labelLength exists.
             // If not use the default price charAmounts[0].
@@ -149,10 +155,7 @@ contract L2SubnameRegistrar is
                 unitPrice = pricingData[parentNode].charAmounts[0];
 
             }
-        } else {
-            //If there is no pricing data, set the price to 0.
-            unitPrice = 0;
-        }
+        } 
 
         // Convert the unit price from USD to Wei.
         return (usdToWei(unitPrice * duration), unitPrice * duration);
@@ -162,7 +165,7 @@ contract L2SubnameRegistrar is
      * @notice Add a name to the allow list.
      * @param _name The name in DNS format, e.g. vitalik.eth
      * @param _allow A bool indicating if the name is allowed to be listed.
-    */
+     */
 
     function allowName(bytes calldata _name, bool _allow) public onlyOwner {
 
@@ -187,24 +190,24 @@ contract L2SubnameRegistrar is
      * @param label Label as a string, e.g. "vault" or vault.vitalik.eth.
      */
 
-    function validLength(bytes32 node, string memory label) internal view returns (bool){
+    function validLength(bytes32 node, string memory label) internal view returns (bool /* valid */){
 
-        //NTS: Make sure to check what happens when string label is missing or zero length
+        //@audit - Make sure to check what happens when string label is missing or zero length
 
-        // The name is valid if the number of characters of the label is greater than the 
-        // minimum and the less than the maximum or the maximum is 0, return true.  
+        /**
+         * The name is valid if the number of characters of the label is greater than the 
+         * minimum and the less than the maximum or the maximum is 0, return true.  
+         */
+
         if (label.strlen() >= pricingData[node].minChars){
 
-            // If the maximum characters is set then check to make sure the label is 
-            // shorter or equal to it.  
+            // If the maximum characters is set then check to make sure the label is shorter or equal to it.  
             if (pricingData[node].maxChars != 0 && label.strlen() > pricingData[node].maxChars){
                 return false; 
             } else {
                 return true;
             }
-        } else {
-            return false; 
-        }
+        } // @audit - else the default return value is false? Just make sure this is not an issue. 
     }
 
     /**
@@ -233,10 +236,13 @@ contract L2SubnameRegistrar is
             revert UnauthorizedAddress(parentNode);
         }
 
-        // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
+        /**
+         * Check to make sure the caller is authorised and the parentNode is wrapped in the 
+         * Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
+         */
+
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
+            !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
         }
 
@@ -260,10 +266,13 @@ contract L2SubnameRegistrar is
         uint256[] calldata _charAmounts
     ) public {
 
-        // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
+        /**
+         * Check to make sure the caller is authorised and the parentNode is wrapped in the 
+         * Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
+         */
+
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
+            !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
         }
 
@@ -280,7 +289,8 @@ contract L2SubnameRegistrar is
      * @param parentNode The namehash of the parent name.
      * @param charLength The character length, e.g. 3 would be for three characters. Use 0 for the default amount.
      */
-    function getPriceDataForLength(bytes32 parentNode, uint16 charLength) public view returns (uint256){
+
+    function getPriceDataForLength(bytes32 parentNode, uint256 charLength) public view returns (uint256){
         return pricingData[parentNode].charAmounts[charLength];
     }
 
@@ -290,16 +300,20 @@ contract L2SubnameRegistrar is
      * @param charLength The character length, e.g. 3 would be for three characters. Use 0 for the default amount.
      * @param charAmount The amount in USD/year for a character count, e.g. amount for three characters.
      */
+
     function updatePriceForCharLength(
         bytes32 parentNode,
         uint16 charLength,
         uint256 charAmount
     ) public {
 
-        // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
+        /**
+         * Check to make sure the caller is authorised and the parentNode is wrapped in the 
+         * Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
+         */
+
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
+            !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
         }
 
@@ -317,14 +331,15 @@ contract L2SubnameRegistrar is
      * @param charAmount The amount in USD/sec. (with 18 digits of precision) 
      * for a character count, e.g. amount for three characters.
      */
+
     function addNextPriceForCharLength(
         bytes32 parentNode,
         uint256 charAmount
     ) public {
 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
+        // Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
+            !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
         }
 
@@ -335,6 +350,7 @@ contract L2SubnameRegistrar is
      * @notice Get the last length for a character length that has a price (can be 0), e.g. three characters.
      * @return The length of the last character length that was set.
      */
+
     function getLastCharIndex(bytes32 parentNode) public view returns (uint256) {
         return pricingData[parentNode].charAmounts.length - 1;
     }
@@ -344,15 +360,16 @@ contract L2SubnameRegistrar is
      * @param parentNode The namehash of the parent name.
      * @param _offerSubnames A bool indicating the parent name owner is offering subnames.
      */
+
     function setOfferSubnames(
         bytes32 parentNode,
         bool _offerSubnames
     ) public {
 
         // Check to make sure the caller is authorised and the parentNode is wrapped in the 
-        // Name Wrapper contract and the CANNOT_UNWRAP and PARENT_CANNOT_CONTROL fuses are burned. 
+        // Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
-            !nameWrapper.allFusesBurned(parentNode, CANNOT_UNWRAP | PARENT_CANNOT_CONTROL)){
+            !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
             revert UnauthorizedAddress(parentNode);
         }
 
@@ -379,7 +396,7 @@ contract L2SubnameRegistrar is
         // the authorization of this contract, then this function will still return true, but
         // registration will not be possible. 
 
-        return validLength(node, label) && 
+        return validLength(parentNode, label) && 
             ens.owner(node) == address(0) &&
             pricingData[parentNode].offerSubnames;
 
@@ -407,6 +424,12 @@ contract L2SubnameRegistrar is
                 )
             );
     }
+
+
+    /**
+     * @notice Registers a commitment hash for a name.
+     * @param commitment The hash to register. 
+     */
 
     function commit(bytes32 commitment) public {
         if (commitments[commitment] + maxCommitmentAge >= block.timestamp) {
@@ -459,7 +482,7 @@ contract L2SubnameRegistrar is
             (string memory label, ) = name.getFirstLabel();
 
             // Check to make sure the label is a valid length.
-            if(!validLength(node, label)){
+            if(!validLength(parentNode, label)){
                 revert WrongNumberOfChars(label);
             }
         }
@@ -542,7 +565,7 @@ contract L2SubnameRegistrar is
                 address(pricingData[parentNode].renewalController), 
                 resolver,
                 0, // TTL
-                fuses | CANNOT_UNWRAP | PARENT_CANNOT_CONTROL,
+                fuses | CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL,
                 expiry
             );
         }
@@ -563,6 +586,102 @@ contract L2SubnameRegistrar is
         }
     }
 
+    /**
+     * @notice Register a random number .unruggable name.
+     * @param owner The address that will own the name.
+     * @param maxLoops The maximum number of times to check for an available name.
+     * @param numChars The number of characters in the name.
+     * @param salt The salt to be used for the commitment.
+     */ 
+
+    function registerUnruggable(
+        address owner,
+        uint256 maxLoops,
+        uint8 numChars,
+        uint256 salt
+    ) public returns(bytes32 /* node */){
+
+        // Get a random label
+        bytes memory label = _getRandomName(maxLoops, numChars, salt);
+
+        // Register the .unruggable name using the NameWrapper setSubnodeRecord function.
+        bytes32 node = nameWrapper.setSubnodeRecord(
+            UNRUGGABLE_TLD_NODE,
+            string(label),
+            owner,
+            address(0), // We don't have an approved address.  
+            address(0), // We don't have a renewal controller.
+            0, // TTL
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL,
+            MAX_EXPIRY
+        );
+
+        return node;
+
+    }
+
+
+    /**
+     * @notice Create a random name using only digits. 
+     * @dev The function checks to see if the name is available for as many times as
+     *      maxLoops, and if a name is not found reverts. 
+     * @param maxLoops The maximum number of times to check for an available name.
+     * @param numChars The number of characters in the name.
+     * @param salt The salt to be used for the commitment. 
+     */
+
+    function _getRandomName(
+        uint256 maxLoops, 
+        uint8 numChars,
+        uint256 salt
+    ) 
+        internal view returns (bytes memory) {
+
+        // Make sure the number of characters is greater than 0.
+        if (numChars == 0){
+            revert("Number of characters must be greater than 0.");
+        }
+
+        // Make sure the number of loops is greater than 0.
+        if (maxLoops == 0){
+            revert("Max loops must be greater than 0.");
+        }
+
+        // Create a new bytes array to hold the random name.
+        bytes memory randomName = new bytes(numChars);
+
+        // Generate a "random number" (hash of the input data) using the block timestamp, msg.sender, and salt.
+        uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, salt)));
+
+
+        // Attempt to find a available name for maxLoops times. 
+        for (uint256 count = 0; count < maxLoops; count++) {
+
+            // Loop numChars times.
+            for (uint256 i = 0; i < numChars; i++) {
+
+                // Get the last digit of the random number.
+                uint8 randomDigit = uint8(randomNumber % 10); // Extract the last digit
+
+                // Convert the digit to UTF-8 bytes
+                randomName[i] = bytes1(uint8(0x30) + randomDigit);
+
+                // Shift the random number to remove the last digit
+                randomNumber /= 10;
+            }
+
+            // create the node using the UNRUGGABLE_TLD_NODE as the parent.
+            bytes32 node = _makeNode(UNRUGGABLE_TLD_NODE, keccak256(randomName));
+
+            // Check to see if the name is available.
+            if (ens.owner(node) == address(0)) {
+                return randomName;
+            }
+        }
+
+        // If we have not found an available name then revert.
+        revert RandomNameNotFound();
+    }
 
     /**
     * @dev Converts USD to Wei. 
@@ -591,6 +710,12 @@ contract L2SubnameRegistrar is
 
     /* Internal functions */
 
+    /**
+     * @notice Checks to see if the commitment is valid and burns it.
+     * @param duration The duration of the registration.
+     * @param commitment The commitment to be checked.
+     */
+
     function _burnCommitment(
         uint256 duration,
         bytes32 commitment
@@ -607,10 +732,6 @@ contract L2SubnameRegistrar is
         }
 
         delete (commitments[commitment]);
-
-        if (duration < MIN_REGISTRATION_DURATION) {
-            revert DurationTooShort(duration);
-        }
     }
 
     function _makeNode(bytes32 node, bytes32 labelhash)

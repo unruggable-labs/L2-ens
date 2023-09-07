@@ -1,0 +1,82 @@
+{
+  "address": "0x1CF25555Eb74b587b4b3d9019d6Bf279E9920d25",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "latestAnswer",
+      "outputs": [
+        {
+          "internalType": "int256",
+          "name": "",
+          "type": "int256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "latestPrice",
+      "outputs": [
+        {
+          "internalType": "int256",
+          "name": "",
+          "type": "int256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x8e174b4767a4a4fb2ca781ea1f9d70e526f4df46a3c86c77cd0e14a56b04ff77",
+  "receipt": {
+    "to": null,
+    "from": "0xFC04D70bea992Da2C67995BbddC3500767394513",
+    "contractAddress": "0x1CF25555Eb74b587b4b3d9019d6Bf279E9920d25",
+    "transactionIndex": 2,
+    "gasUsed": "105679",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xbc4bb04c9db61fa52e0f10bec1adf14d68e15824cee64ea4f12860afb49f6ffb",
+    "transactionHash": "0x8e174b4767a4a4fb2ca781ea1f9d70e526f4df46a3c86c77cd0e14a56b04ff77",
+    "logs": [],
+    "blockNumber": 13295572,
+    "cumulativeGasUsed": "308681",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "cad8f2b8710f80e95abb469eef5fbc7b",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.19+commit.7dd6d404\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"latestAnswer\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"latestPrice\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/layertwo/optimism/wrapper/mocks/USDOracleMock.sol\":\"USDOracleMock\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":100},\"remappings\":[\":@ensdomains/buffer/=lib/buffer/\",\":@openzeppelin/=lib/openzeppelin-contracts/\",\":buffer/=lib/buffer/contracts/\",\":ds-test/=lib/forge-std/lib/ds-test/src/\",\":ens-contracts/=lib/ens-contracts/contracts/\",\":erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/\",\":forge-std/=lib/forge-std/src/\",\":openzeppelin-contracts/=lib/openzeppelin-contracts/\",\":openzeppelin/=lib/openzeppelin-contracts/contracts/\",\":optimism/=contracts/layertwo/optimism/\",\":unruggable-protocol/=lib/unruggable-protocol/\",\":xap-contracts/=lib/xap/contracts/\"]},\"sources\":{\"contracts/layertwo/optimism/wrapper/interfaces/IAggregatorInterface.sol\":{\"content\":\"//SPDX-License-Identifier: MIT\\npragma solidity ^0.8.17;\\n\\n// Chainlink oracle interface\\ninterface IAggregatorInterface {\\n    function latestAnswer() external view returns (int256);\\n}\",\"keccak256\":\"0x39cfb36ad94daab8e3814fad5740f6ac747d11cba399812267333bc1e32ab28f\",\"license\":\"MIT\"},\"contracts/layertwo/optimism/wrapper/mocks/USDOracleMock.sol\":{\"content\":\"//SPDX-License-Identifier: MIT\\npragma solidity ^0.8.17;\\n\\nimport {IAggregatorInterface} from \\\"optimism/wrapper/interfaces/IAggregatorInterface.sol\\\";\\n\\ncontract USDOracleMock is IAggregatorInterface{\\n\\n    int256 public latestPrice = 185444000000;\\n\\n    function latestAnswer() external view returns (int256){\\n        return int256(latestPrice);\\n    }\\n}\",\"keccak256\":\"0x0dc9a014777dc1e78d067624f573a377f4f191899cc6e3d24c5cce8ac9fb068c\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x6080604052642b2d52e100600055348015601857600080fd5b50608b806100276000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c806350d25bcd146037578063a3e6ba9414604d575b600080fd5b6000545b60405190815260200160405180910390f35b603b6000548156fea26469706673582212200f91a7361ff09a79da87cbfa8d612221a1f1083f867f799d0ca62e0a6f476a1664736f6c63430008130033",
+  "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806350d25bcd146037578063a3e6ba9414604d575b600080fd5b6000545b60405190815260200160405180910390f35b603b6000548156fea26469706673582212200f91a7361ff09a79da87cbfa8d612221a1f1083f867f799d0ca62e0a6f476a1664736f6c63430008130033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 6697,
+        "contract": "contracts/layertwo/optimism/wrapper/mocks/USDOracleMock.sol:USDOracleMock",
+        "label": "latestPrice",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_int256"
+      }
+    ],
+    "types": {
+      "t_int256": {
+        "encoding": "inplace",
+        "label": "int256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}

@@ -2,13 +2,27 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {L2SubnameRegistrar, UnauthorizedAddress} from "optimism/wrapper/L2SubnameRegistrar.sol";
+import {
+        
+        L2SubnameRegistrar, 
+        UnauthorizedAddress, // import errors 
+        CommitmentTooNew,                   
+        CannotSetNewCharLengthAmounts,      
+        InsufficientValue,
+        NameNotAvailable,
+        WrongNumberOfChars,
+        WrongNumberOfCharsForRandomName,
+        InvalidDuration,
+        UnexpiredCommitmentExists,
+        CommitmentTooOld
+        
+        } from "optimism/wrapper/L2SubnameRegistrar.sol";
 import {ISubnameRegistrar} from "optimism/wrapper/interfaces/ISubnameRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
 import {L2PublicResolver} from "optimism/resolvers/L2PublicResolver.sol";
-import {IL2NameWrapper, CANNOT_UNWRAP} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {INameWrapper} from "ens-contracts/wrapper/INameWrapper.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
@@ -20,9 +34,7 @@ import {IERC1155MetadataURI} from "openzeppelin-contracts/contracts/token/ERC115
 import {GasHelpers} from "./GasHelpers.sol";
 import {IERC165} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
-error UnexpiredCommitmentExists(bytes32 commitment);
 error ZeroLengthLabel();
-error InvalidDuration(uint256 duration);
 
 contract SubnameRegistrarTest is Test, GasHelpers {
 
@@ -33,6 +45,11 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         0x4f5b812789fc606be1b3b16908db13fc7a9adf7ca72641f84d75b47069d3d7f0;
     bytes32 private constant ROOT_NODE =
         0x0000000000000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant UNRUGGABLE_TLD_NODE = 
+        0xc951937fc733cfe92dd3ea5d53048d4f39082c7e84dfc0501b03d5e2dd672d5d;
+    bytes32 private constant UNRUGGABLE_TLD_LABELHASH = 
+        0x0fb49d3befd591078ec044334b6cad68f02609749d39e161fa1ff9bf6ce96d8c;
+
     string MAINNET_RPC_URL = "https://eth-mainnet.g.alchemy.com/v2/_YutYRi0sYLsh44jlBvM7QgDOcK-JhtY";
     uint64 twoYears = 63072000; // aprox. 2 years
     uint64 oneYear = 31536000; // A year in seconds.
@@ -85,11 +102,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         ens.setSubnodeOwner(ROOT_NODE, ETH_LABELHASH, address(nameWrapper));
         assertEq(ens.owner(ETH_NODE), address(nameWrapper));
 
-        // Approve the name wrapper as a controller of the ENS registry.
-        // ens.setApprovalForAll(address(nameWrapper), true); // @audit - this is not needed.
-
         // Deploy the public resolver.
-        //@audit - for some reason this doesn't work when I removed the reverse registrar.
         publicResolver = new L2PublicResolver(ens, nameWrapper, address(0));
 
         // Deploy the Subname Registrar.
@@ -101,8 +114,32 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             usdOracle
         );
 
-        // Allow the "account" to register names in the name wrapper.
+        // Allow "account" to register names in the name wrapper.
         nameWrapper.setController(account, true);
+
+        /**
+         * Set up the .unruggable TLD in the ENS registry. The .unruggable TLD is a special TLD that
+         * we use to be able to assign anyone a random second level name, which can be used to issue subnamees.
+         * The .unruggable TLD is owned by the caller and the caller can approve the subname registrar to
+         * register subnames under the .unruggable TLD.
+         */
+        ens.setSubnodeOwner(ROOT_NODE, UNRUGGABLE_TLD_LABELHASH, account);
+        assertEq(ens.owner(UNRUGGABLE_TLD_NODE), account);
+
+        // Approve the NameWrapper to register subnames under the .unruggable TLD.
+        ens.setApprovalForAll(address(nameWrapper), true);
+
+        // Wrap the .unruggable TLD in the NameWrapper.
+        nameWrapper.wrapTLD(
+            bytes("\x0aunruggable\x00"), 
+            account, 
+            PARENT_CANNOT_CONTROL | CANNOT_BURN_NAME, 
+            uint64(type(uint64).max)
+        );
+
+        // Make sure we are the owner of .unruggable TLD in the NameWrapper.
+        assertEq(nameWrapper.ownerOf(uint256(UNRUGGABLE_TLD_NODE)), account);
+
 
         // Register a 2LD .eth name in the NameWrapper
         nameWrapper.registerAndWrapEth2LD(
@@ -111,14 +148,21 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             address(0), //no approved contract
             twoYears,
             address(publicResolver),
-            uint16(CANNOT_UNWRAP)
+            uint16(CANNOT_BURN_NAME)
         );
 
         // Revoke the approval for "account".
         nameWrapper.setController(account, false);
 
-        // In order to register subnames using the L2 subname wrapper, the owner of the 
-        // parent name "account" needs to approve all for the subname wrapper in the name wrapper.  
+        // Revoke the approval for "account" in the ENS registry.
+        ens.setApprovalForAll(address(nameWrapper), false);
+
+        /**
+         * In order to register subnames of abc.eth and the .unruggable TLD, 
+         * which are both owned by "account" in the NameWrapper,
+         * we need to approve all for subname registrar.
+         */
+
         nameWrapper.setApprovalForAll(address(subnameRegistrar), true);
     }
 
@@ -137,8 +181,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             IRenewalController(address(subnameRegistrar)), 
             3600, 
             type(uint64).max,
-            1, 
-            255 
+            3, // min chars
+            32 // max length of a subname 
         );
 
         // Set the pricing for the subname registrar. 
@@ -187,6 +231,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         return bytes("\x03xyz\x03abc\x03eth\x00").namehash(0);
 
     }
+
     // Create a Subheading using an empty function.
     function test1000_________________________________________________________________________() public {}
     function test2000_______________________L2_SUBNAME_REGISTRAR_FUNCTIONS____________________() public {}
@@ -360,6 +405,28 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         assertEq(_maxChars, 254);
     }
 
+    function test_005____setParams___________________RevertsWhenCallerIsNotTheOwner() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        registerAndWrap(account);
+
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        // Revert when the caller is not the owner of the name.
+        vm.expectRevert( abi.encodeWithSelector(UnauthorizedAddress.selector, parentNode));
+
+        subnameRegistrar.setParams(
+            parentNode, 
+            false, 
+            renewalController, 
+            3601, 
+            type(uint64).max,
+            2, 
+            254 
+        );
+    }
+
     function test_006____setPricingForAllLengths_____SetThePriceForAllLengthsOfNamesAtOneTime() public{
 
         bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
@@ -384,6 +451,34 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     }
 
+    function test_006____setPricingForAllLengths_____RevertsWhenCallerIsNotTheOwner() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        registerAndWrap(account);
+
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        /**
+         * Set the pricing for the subname registrar. 
+         * Note that there are 4 elements, but only the first three have been defined. 
+         * This has been done to make sure that nothing breaks even if one is not defined. 
+         */
+
+        uint256[] memory charAmounts = new uint256[](4);
+        charAmounts[0] = 158548959918; // (≈$5/year) calculated as $/sec with 18 decimals.
+        charAmounts[1] = 158548959918;
+        charAmounts[2] = 1;
+
+        // Revert when the caller is not the owner of the name.
+        vm.expectRevert( abi.encodeWithSelector(UnauthorizedAddress.selector, parentNode));
+
+        subnameRegistrar.setPricingForAllLengths(
+            parentNode, 
+            charAmounts
+        );
+    }
+
     function test_007____getPriceDataForLength_______TheAmontForAnySetLengthOfName() public{
 
         bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
@@ -405,6 +500,65 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         assertEq(subnameRegistrar.getPriceDataForLength(parentNode, 
         uint16(subnameRegistrar.getLastCharIndex(parentNode))), 317097919836);
 
+    }
+
+    function test_008____updatePriceForCharLength____RevertsIfCharLengthDoesntExist() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes32 node = registerAndWrap(account2);
+
+        // Revert if the char length doesn't exist.
+        vm.expectRevert( abi.encodeWithSelector(CannotSetNewCharLengthAmounts.selector));
+
+        subnameRegistrar.updatePriceForCharLength(parentNode, 22, 317097919836);
+
+    }
+
+    function test_008____updatePriceForCharLength____RevertsWhenCallerIsNotTheOwner() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        registerAndWrap(account);
+
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        // Revert when the caller is not the owner of the name.
+        vm.expectRevert( abi.encodeWithSelector(UnauthorizedAddress.selector, parentNode));
+
+        subnameRegistrar.updatePriceForCharLength(parentNode, 3, 317097919836);
+
+    }
+
+    function test_008____addNextPriceForCharLength___AddsANewPriceForCharacterLength() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes32 node = registerAndWrap(account2);
+
+        // Add a price for the next character (4th character).
+        subnameRegistrar.addNextPriceForCharLength(parentNode, 317097919836);
+
+        // Get the last character index.
+        uint256 lastCharIndex = subnameRegistrar.getLastCharIndex(parentNode);
+
+        // Make sure the price was added correctly.
+        assertEq(subnameRegistrar.getPriceDataForLength(parentNode, lastCharIndex), 317097919836);
+
+    }
+
+    function test_008____addNextPriceForCharLength___RevertIfCallerIsNotOwner() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes32 node = registerAndWrap(account2);
+
+        // Change the caller to account2.
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        // Revert if the caller is not the owner of the name.
+        vm.expectRevert( abi.encodeWithSelector(UnauthorizedAddress.selector, parentNode));
+
+        // Add a price for the next character (4th character).
+        subnameRegistrar.addNextPriceForCharLength(parentNode, 317097919836);
     }
 
     function test_009____getLastCharIndex____________ReturnsTheLastIndexOfCharAmounts() public{
@@ -438,6 +592,22 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     }
 
+    function test_010____setOfferSubnames____________RevertIfCallerIsNotTheOwner() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes32 node = registerAndWrap(account2);
+
+        // Switch to account2.
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        // Revert if the caller is not the owner of the name.
+        vm.expectRevert( abi.encodeWithSelector(UnauthorizedAddress.selector, parentNode));
+
+        // Set the offer subnames to false.
+        subnameRegistrar.setOfferSubnames(parentNode, false);
+    }
+
     function test_011____available___________________AvailableToRegister() public{
 
         bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
@@ -448,6 +618,9 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         // check if a 32 character name is available.
         assertEq(subnameRegistrar.available(bytes("\x20123456745678asftgesnytfwsdftgnrw\x03abc\x03eth\x00")), true);
+
+        // check if a 33 character name is available.
+        assertEq(subnameRegistrar.available(bytes("\x21123456745678asftgesnytfwsdftgnrwx\x03abc\x03eth\x00")), false);
 
         // add an extra null byte to the end of the name.
         vm.expectRevert(bytes("namehash: Junk at end of name"));
@@ -463,7 +636,6 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         // Names with the a zero length of the label in the DNS encoding.
         vm.expectRevert(bytes(""));
         subnameRegistrar.available(bytes("\x00\x03abc\x03eth\x00"));
-
 
     }
 
@@ -656,6 +828,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         vm.startPrank(account);
 
     }
+
     function test_015____register____________________RegistringForTooShortOrLongFails() public{
 
         bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
@@ -740,4 +913,371 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     }
 
+    function test_015____register____________________CannotRegisterSubnamesWhenNotOffered() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        registerAndWrap(account2);
+
+        // Disable offering of subnames.
+        subnameRegistrar.setParams(
+            parentNode, 
+            false, 
+            IRenewalController(address(subnameRegistrar)), 
+            3600, 
+            type(uint64).max,
+            1, // min chars
+            32 // max length of a subname 
+        );
+
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        bytes32 commitment = subnameRegistrar.makeCommitment(
+            bytes("\x08coolname\x03abc\x03eth\x00"), 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        subnameRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Revert if the registration is not offered for subnames. 
+        vm.expectRevert( abi.encodeWithSelector(NameNotAvailable.selector, bytes("\x08coolname\x03abc\x03eth\x00")));
+
+        // Register the subname, and overpay with 1 ETH.
+        subnameRegistrar.register{value: 1000000000000000000}(
+            "\x08coolname\x03abc\x03eth\x00",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 //fuses 
+        );
+
+    }
+
+    function test_015____register____________________LabelIsNotTooLong() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        registerAndWrap(account2);
+
+         // Set the caller to _account and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+        bytes32 commitment = subnameRegistrar.makeCommitment(
+            bytes("\x21123456745678asftgesnytfwsdftgnrwx\x03abc\x03eth\x00"), 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        subnameRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Expect to revert if the duration is too long with a custom error InvalidDuration
+        vm.expectRevert( abi.encodeWithSelector(WrongNumberOfChars.selector, "123456745678asftgesnytfwsdftgnrwx"));
+
+        // Register the subname, and overpay with 1 ETH.
+        subnameRegistrar.register{value: 1000000000000000000}(
+            "\x21123456745678asftgesnytfwsdftgnrwx\x03abc\x03eth\x00",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 //fuses 
+        );
+    }
+
+    function test_015____register____________________LabelIsNotTooShort() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        registerAndWrap(account2);
+
+         // Set the caller to _account and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+        bytes32 commitment = subnameRegistrar.makeCommitment(
+            bytes("\x02ab\x03abc\x03eth\x00"), 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        subnameRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Expect to revert if the duration is too long with a custom error InvalidDuration
+        vm.expectRevert( abi.encodeWithSelector(WrongNumberOfChars.selector, "ab"));
+
+        // Register the subname, and overpay with 1 ETH.
+        subnameRegistrar.register{value: 1000000000000000000}(
+            "\x02ab\x03abc\x03eth\x00",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 //fuses 
+        );
+    }
+
+
+    function test_015____register____________________ExpiryIsTooLongSetToMaxExpiry() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        registerAndWrap(account2);
+
+        // Disable offering of subnames.
+        subnameRegistrar.setParams(
+            parentNode, 
+            true, 
+            IRenewalController(address(subnameRegistrar)), 
+            3600, 
+            3 * oneYear,
+            1, // min chars
+            32 // max length of a subname 
+        );
+
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        bytes32 commitment = subnameRegistrar.makeCommitment(
+            bytes("\x08coolname\x03abc\x03eth\x00"), 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        subnameRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Register the subname, and overpay with 1 ETH.
+        subnameRegistrar.register{value: 1000000000000000000}(
+            "\x08coolname\x03abc\x03eth\x00",
+            account2,
+            accountReferrer, //referrer
+            twoYears + GRACE_PERIOD + oneDay,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 //fuses 
+        );
+
+        // Get the expiry of the subname.
+        (,,uint256 expiry) = nameWrapper.getData(uint256(bytes("\x08coolname\x03abc\x03eth\x00").namehash(0)));
+
+        // Make sure the expiry is set to one year.
+        assertEq(expiry, block.timestamp + twoYears + GRACE_PERIOD - 122); // 122 becuase we skip(61) twice. 
+    }
+
+    function test_014____register____________________SendEnoughEther() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes32 node = registerAndWrap(account2);
+
+        assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
+        assertEq(subnameRegistrar.available(bytes("\x08coolname\x03abc\x03eth\x00")), true);
+
+         // Set the caller to _account and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+        bytes32 commitment = subnameRegistrar.makeCommitment(
+            "\x08coolname\x03abc\x03eth\x00", 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        subnameRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Revert with InsufficientValue() if we don't send enough ether.
+        vm.expectRevert( abi.encodeWithSelector(InsufficientValue.selector));
+
+        // Register the subname, pay only one wei.
+        subnameRegistrar.register{value: 1}(
+            "\x08coolname\x03abc\x03eth\x00",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 /* fuses */
+        );
+
+    }
+
+    function test_014____register____________________RevertsIfCommitmentIsNotOldEnough() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes32 node = registerAndWrap(account2);
+
+        assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
+        assertEq(subnameRegistrar.available(bytes("\x08coolname\x03abc\x03eth\x00")), true);
+
+         // Set the caller to _account and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+        bytes32 commitment = subnameRegistrar.makeCommitment(
+            "\x08coolname\x03abc\x03eth\x00", 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        subnameRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(59);
+
+        // Revert with InsufficientValue() if we don't send enough ether.
+        vm.expectRevert( abi.encodeWithSelector(CommitmentTooNew.selector, commitment));
+
+        // Register the subname, paying more than we need 1 Eth.
+        subnameRegistrar.register{value: 1000000000000000000}(
+            "\x08coolname\x03abc\x03eth\x00",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 /* fuses */
+        );
+
+    }
+
+    function test_014____register____________________RevertsIfCommitmentIsTooOld() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes32 node = registerAndWrap(account2);
+
+        assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
+        assertEq(subnameRegistrar.available(bytes("\x08coolname\x03abc\x03eth\x00")), true);
+
+         // Set the caller to _account and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+        bytes32 commitment = subnameRegistrar.makeCommitment(
+            "\x08coolname\x03abc\x03eth\x00", 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        subnameRegistrar.commit(commitment);
+
+        // Advance the timestamp by too much. The commitment is now too old.
+        skip(oneMonth);
+
+        // Revert with InsufficientValue() if we don't send enough ether.
+        vm.expectRevert( abi.encodeWithSelector(CommitmentTooOld.selector, commitment));
+
+        // Register the subname, paying more than we need 1 Eth.
+        subnameRegistrar.register{value: 1000000000000000000}(
+            "\x08coolname\x03abc\x03eth\x00",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 /* fuses */
+        );
+
+    }
+
+    function test_016____registerUnruggable__________RegisterADotUnruggableName() public{
+
+        bytes32 node = subnameRegistrar.registerUnruggable(account, 3, 12, 57654674567);
+
+        // Check to make sure the subname is owned account2 in the Name Wrapper.
+        assertEq(nameWrapper.ownerOf(uint256(node)), account);
+    }
+
+    function test_017____registerUnruggable__________FindingAvailableNameHappensOftenEnough() public{
+
+        // Add a revert counter.
+        uint256 errorRevertCount = 0;
+
+        /**
+         * Each iteration of the loop we call registerUnruggable, which attempts to find a "random" 
+         * number as a name. The first parameter is maxLoops which is the max number of times the function
+         * will attempt to find an available name. The next parameter is the number of characters.
+         * In this case we test for a limited name space of 00-99. 
+         */
+
+        // try 100 times in a loop using try catch
+        for (uint i = 0; i < 100; i++) {
+            try subnameRegistrar.registerUnruggable(account, 2, 2, i) returns (bytes32 node){
+                // Check to make sure the subname is owned by "account" in the L2NameWrapper.
+                assertEq(nameWrapper.ownerOf(uint256(node)), account);
+            } catch Error(string memory reason) {
+                // This is executed in case
+                // revert was called 
+                // and a reason string was provided.
+            } catch (bytes memory lowLevelData) {
+                // This is executed in case revert() was used
+                // or there was a failing assertion, division
+                // by zero, etc. 
+
+                // Revert count.
+                errorRevertCount++;
+            }
+        }
+
+        /**
+         * Make sure the error count is less than 24. This means that out of the 100 attempts to 
+         * find an available name in the range of 00-99, 24 of them failed. This is a 24% failure rate. 
+         * Increasing the number of tries per call, i.e. maxLoops, will decrease the failure rate, but 
+         * with rapidly diminishing returns. The greatest benefit is seen when increasing maxLoops from 1 to 2. 
+         */ 
+        
+        assertTrue(errorRevertCount < 24);
+    }
+
+    function test_018____registerUnruggable__________EdgeCasesAreHandled() public{
+
+        // Expect a revert if the number of characters is 0.
+        vm.expectRevert( bytes("Number of characters must be greater than 0."));
+
+        // Attempt to register a name with 0 characters.
+        bytes32 node = subnameRegistrar.registerUnruggable(account, 2, 0, 7);
+
+        /**
+         * Expect a revert if the number of characters is over 255, because the max value of uint8 is 255.
+         * Call subnameRegistrar.registerUnruggable using a low level call function so we can try to 
+         * register a name with 256 characters.
+         */
+
+        (bool success, /*bytes memory returnData*/) = address(subnameRegistrar).call(
+            abi.encodeWithSelector(
+                subnameRegistrar.registerUnruggable.selector,
+                account,
+                2, // The max number of loops.
+                256, // Number of characters. 
+                7 // The salt.
+            )
+        );
+
+        // Check to make sure the transaction was successful.
+        assertFalse(success);
+
+        // Expect revert if the number of loops is 0.
+        vm.expectRevert(bytes("Max loops must be greater than 0."));
+        bytes32 node2 = subnameRegistrar.registerUnruggable(account, 0, 7, 7);
+    }
 }

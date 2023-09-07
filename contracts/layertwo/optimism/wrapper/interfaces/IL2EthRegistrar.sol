@@ -18,10 +18,10 @@ interface IL2EthRegistrar {
         uint256 expires
     );
 
-    event NameRenewed(
+    event EthNameRenewed(
         string indexed label,
-        uint256 indexed cost,
-        uint256 indexed expires
+        uint256 indexed price,
+        uint256 indexed duration
     );
 
     function rentPrice(

@@ -9,7 +9,7 @@ import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
 import {L2PublicResolver} from "optimism/resolvers/L2PublicResolver.sol";
 import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
-import {INameWrapper, CANNOT_UNWRAP} from "ens-contracts/wrapper/INameWrapper.sol";
+import {INameWrapper} from "ens-contracts/wrapper/INameWrapper.sol";
 import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
@@ -554,6 +554,28 @@ contract L2EthRegistrarTest is Test, GasHelpers {
         
         vm.stopPrank();
         vm.startPrank(account);
+
+    }
+
+    function test_016____renew_______________________RenewADotEth2LD() public{
+
+        bytes32 node = registerAndWrap(account2);
+
+        //get the previous expiry. 
+        (,, uint64 prevExpiry) = nameWrapper.getData(uint256(node));
+
+        // Renew the name for one year. Overpay with 1 Eth  
+        ethRegistrar.renew{value: 1000000000000000000}(
+            "abc",
+            accountReferrer, 
+            oneYear
+        );
+
+        // get the data for the name
+        (, , uint64 expiry) = nameWrapper.getData(uint256(node));
+
+        // Make sure the name is renewed for one more year.
+        assertEq(expiry, uint64(prevExpiry + oneYear));
 
     }
 
