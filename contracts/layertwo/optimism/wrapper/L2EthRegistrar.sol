@@ -136,8 +136,8 @@ contract L2EthRegistrar is
 
             }
         } else {
-            //If there is no pricing data, set the price to 0.
-            unitPrice = 0;
+            //If there is no pricing data, return 0, i.e. free.
+            return (0, 0);
         }
 
         // Convert the unit price from USD to Wei.

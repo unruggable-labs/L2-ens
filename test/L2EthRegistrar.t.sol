@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {L2EthRegistrar, UnauthorizedAddress} from "optimism/wrapper/L2EthRegistrar.sol";
+import {L2EthRegistrar, UnauthorizedAddress, WrongNumberOfChars} from "optimism/wrapper/L2EthRegistrar.sol";
 import {IL2EthRegistrar} from "optimism/wrapper/interfaces/IL2EthRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
@@ -195,6 +195,29 @@ contract L2EthRegistrarTest is Test, GasHelpers {
 
         // make sure the price is close to the expected price.
         assertTrue(weiAmount/10**10 == expectedPrice/10**10);
+    }
+
+    function test_002____rentPrice___________________DefaultPriceIsZero() public{
+
+        // Set the pricing for the name registrar. 
+        // Not that there are 4 elements, but only the fist three have been defined. 
+        // This has been done to make sure that nothing breaks even if one is not defined. 
+        uint256[] memory charAmountsNull = new uint256[](0);
+
+        ethRegistrar.setPricingForAllLengths(
+            charAmountsNull
+        );
+
+        // Make sure the price is zero.
+        (uint256 weiAmount, uint256 usdAmount) = ethRegistrar.rentPrice(
+            bytes("\x03abc\x03eth\x00"), 
+            oneYear 
+        );
+
+        // Check to make sure the price is zero.
+        assertEq(weiAmount, 0);
+        assertEq(usdAmount, 0);
+
     }
 
     function test_005____setParams___________________SetTheRegistrationParameters() public{
@@ -557,7 +580,91 @@ contract L2EthRegistrarTest is Test, GasHelpers {
 
     }
 
-    function test_016____renew_______________________RenewADotEth2LD() public{
+    function test_016____register____________________RevertsWhenRegisteringTooShortNames() public{
+
+         // Set the caller to account2 and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+        // make a 256 character name.
+        string memory label = "a";
+
+
+        bytes32 commitment = ethRegistrar.makeCommitment(
+            label, 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        ethRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Expect to revert with WrongNumberOfChars(label).
+        vm.expectRevert(abi.encodeWithSelector(WrongNumberOfChars.selector, label));
+
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            label,
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 /* fuses */
+        );
+    }
+
+    function test_017____register____________________RevertsWhenRegisteringTooLongNames() public{
+
+        // Reset params for the L2 Eth Registrar.
+        ethRegistrar.setParams(
+            oneMonth, 
+            type(uint64).max, //no maximum length of time. 
+            3, // min three characters 
+            100 // max 100 characters
+        );
+
+         // Set the caller to account2 and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+        // make a 256 character name.
+        bytes memory label = new bytes(101);
+        for (uint256 i = 0; i < 101; i++) {
+            label[i] = "a";
+        }
+
+        bytes32 commitment = ethRegistrar.makeCommitment(
+            string(label), 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        ethRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Expect to revert with WrongNumberOfChars(label).
+        vm.expectRevert(abi.encodeWithSelector(WrongNumberOfChars.selector, string(label)));
+
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            string(label),
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 /* fuses */
+        );
+    }
+
+    function test_018____renew_______________________RenewADotEth2LD() public{
 
         bytes32 node = registerAndWrap(account2);
 
