@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {L2EthRegistrar, UnauthorizedAddress, WrongNumberOfChars} from "optimism/wrapper/L2EthRegistrar.sol";
+import {L2EthRegistrar, UnauthorizedAddress, WrongNumberOfChars, CannotSetNewCharLengthAmounts, InsufficientValue} from "optimism/wrapper/L2EthRegistrar.sol";
 import {IL2EthRegistrar} from "optimism/wrapper/interfaces/IL2EthRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
@@ -277,6 +277,17 @@ contract L2EthRegistrarTest is Test, GasHelpers {
 
     }
 
+    function test_008____updatePriceForCharLength____RevertsIfLengthDoesntExist() public{
+
+        bytes32 node = registerAndWrap(account2);
+
+        // revert with error CannotSetNewCharLengthAmounts if the length doesn't exist.
+        vm.expectRevert(abi.encodeWithSelector(CannotSetNewCharLengthAmounts.selector));
+
+        ethRegistrar.updatePriceForCharLength(12, 317097919836);
+
+    }
+
     function test_009____getLastCharIndex____________ReturnsTheLastIndexOfCharAmounts() public{
 
         bytes32 node = registerAndWrap(account2);
@@ -500,6 +511,46 @@ contract L2EthRegistrarTest is Test, GasHelpers {
         vm.startPrank(account);
 
     }
+
+    function test_014____register____________________RevertWhenNotEnoughEthIsSent() public{
+
+        bytes32 node = registerAndWrap(account2);
+
+         // Set the caller to _account and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+        bytes32 commitment = ethRegistrar.makeCommitment(
+            "coolname", 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        ethRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Revert with InsufficientValue() if not enough ETH is sent.
+        vm.expectRevert(abi.encodeWithSelector(InsufficientValue.selector));
+
+        // Register the name, and overpay with 1 wei.
+        ethRegistrar.register{value: 1}(
+            "coolname",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 /* fuses */
+        );
+
+        // Check to make sure the name is owned the name Wrapper in the Name Wrapper.
+        assertEq(nameWrapper.ownerOf(uint256(node)), account2);
+
+    }
+
     function test_015____register____________________RegistringForTooShortOrLongFails() public{
 
         bytes32 node = registerAndWrap(account2);
