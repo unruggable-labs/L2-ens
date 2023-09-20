@@ -435,23 +435,6 @@ contract L2EthRegistrar is
         // Get the owners of the name and the parent name.
         address nodeOwner = nameWrapper.ownerOf(uint256(node));
 
-        // remove the access control check, because anyone can renew a .eth 2LD name. 
-        if( msg.sender != nodeOwner && nameWrapper.isApprovedForAll(nodeOwner, msg.sender)){
-            revert UnauthorizedAddress(node);
-        }
-
-        // Create a block to solve a stack too deep error.
-        {
-            (,, uint64 nodeExpiry) = nameWrapper.getData(uint256(node));
-
-            // Check to see if the duration is too long and
-            // if it is set the duration.
-            (,, uint64 parentExpiry) = nameWrapper.getData(uint256(parentNode));
-            if (nodeExpiry + duration > parentExpiry) {
-                duration = parentExpiry - nodeExpiry;
-            }
-        }
-
         // Get the price for the duration.
         (uint256 priceEth,) = rentPrice(name, duration);
         if (msg.value < priceEth) {
