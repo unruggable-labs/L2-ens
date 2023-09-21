@@ -2,7 +2,20 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {L2EthRegistrar, UnauthorizedAddress, WrongNumberOfChars, CannotSetNewCharLengthAmounts, InsufficientValue} from "optimism/wrapper/L2EthRegistrar.sol";
+import {
+    
+    L2EthRegistrar, 
+    UnauthorizedAddress, 
+    WrongNumberOfChars, 
+    CannotSetNewCharLengthAmounts, 
+    InsufficientValue,
+    LabelTooShort,
+    LabelTooLong,
+    CommitmentTooNew,
+    CommitmentTooOld,
+    DurationTooShort
+
+} from "optimism/wrapper/L2EthRegistrar.sol";
 import {IL2EthRegistrar} from "optimism/wrapper/interfaces/IL2EthRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
@@ -715,6 +728,137 @@ contract L2EthRegistrarTest is Test, GasHelpers {
         );
     }
 
+    function test_017____register____________________RevertsWhenRegisteringNamesWith256Characters() public{
+
+        // Reset params for the L2 Eth Registrar.
+        ethRegistrar.setParams(
+            oneMonth, 
+            type(uint64).max, //no maximum length of time. 
+            3, // min three characters 
+            100 // max 100 characters
+        );
+
+         // Set the caller to account2 and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+        // make a 256 character name.
+        bytes memory label = new bytes(256);
+        for (uint256 i = 0; i < 101; i++) {
+            label[i] = "a";
+        }
+
+        bytes32 commitment = ethRegistrar.makeCommitment(
+            string(label), 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        ethRegistrar.commit(commitment);
+
+        // Advance the timestamp by 61 seconds.
+        skip(61);
+
+        // Expect to revert with WrongNumberOfChars(label).
+        vm.expectRevert(abi.encodeWithSelector(LabelTooLong.selector));
+
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            string(label),
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 /* fuses */
+        );
+    }
+
+    function test_017____register____________________RevertsWhenRegisteringUsingATooNewCommitment() public{
+
+        // Reset params for the L2 Eth Registrar.
+        ethRegistrar.setParams(
+            oneMonth, 
+            type(uint64).max, //no maximum length of time. 
+            3, // min three characters 
+            100 // max 100 characters
+        );
+
+         // Set the caller to account2 and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+
+        bytes32 commitment = ethRegistrar.makeCommitment(
+            "newname", 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        ethRegistrar.commit(commitment);
+
+        // Advance the timestamp by 1 seconds, which is not enough.
+        skip(1);
+
+        // Expect to revert with WrongNumberOfChars(label).
+        vm.expectRevert(abi.encodeWithSelector(CommitmentTooNew.selector, commitment));
+
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            "newname",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 /* fuses */
+        );
+    }
+
+    function test_017____register____________________RevertsWhenRegisteringUsingATooOldCommitment() public{
+
+        // Reset params for the L2 Eth Registrar.
+        ethRegistrar.setParams(
+            oneMonth, 
+            type(uint64).max, //no maximum length of time. 
+            3, // min three characters 
+            100 // max 100 characters
+        );
+
+         // Set the caller to account2 and give the account 10 ETH.
+        vm.stopPrank();
+        vm.startPrank(account2);
+        vm.deal(account2, 10000000000000000000);
+
+
+        bytes32 commitment = ethRegistrar.makeCommitment(
+            "newname", 
+            account2, 
+            bytes32(uint256(0x7878))
+        );
+
+        ethRegistrar.commit(commitment);
+
+        // Advance the timestamp by one week plus one second.
+        skip(604801);
+
+        // Expect to revert with WrongNumberOfChars(label).
+        vm.expectRevert(abi.encodeWithSelector(CommitmentTooOld.selector, commitment));
+
+        // Register the name, and overpay with 1 ETH.
+        ethRegistrar.register{value: 1000000000000000000}(
+            "newname",
+            account2,
+            accountReferrer, //referrer
+            oneYear,
+            bytes32(uint256(0x7878)), 
+            address(publicResolver), 
+            0 /* fuses */
+        );
+    }
+
     function test_018____renew_______________________RenewADotEth2LD() public{
 
         bytes32 node = registerAndWrap(account2);
@@ -737,4 +881,41 @@ contract L2EthRegistrarTest is Test, GasHelpers {
 
     }
 
+    function test_018____renew_______________________RevertsWhenNotEnoughEthIsSent() public{
+
+        bytes32 node = registerAndWrap(account2);
+
+        //get the previous expiry. 
+        (,, uint64 prevExpiry) = nameWrapper.getData(uint256(node));
+
+        // Revert when not enough value is sent. 
+        vm.expectRevert(abi.encodeWithSelector(InsufficientValue.selector));
+
+        // Renew the name for one year. Overpay with 1 Eth  
+        ethRegistrar.renew{value: 1}(
+            "abc",
+            accountReferrer, 
+            oneYear
+        );
+
+    }
+
+    function test_018____renew_______________________RevertIfLabelIsMissing() public{
+
+        bytes32 node = registerAndWrap(account2);
+
+        //get the previous expiry. 
+        (,, uint64 prevExpiry) = nameWrapper.getData(uint256(node));
+
+        // Revert if the name is missing.
+        vm.expectRevert(abi.encodeWithSelector(LabelTooShort.selector)); 
+
+
+        // Renew the name for one year. Overpay with 1 Eth  
+        ethRegistrar.renew{value: 1000000000000000000}(
+            "",
+            accountReferrer, 
+            oneYear
+        );
+    }
 }
