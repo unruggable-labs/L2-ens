@@ -512,6 +512,7 @@ contract L2EthRegistrar is
         return abi.encodePacked(uint8(bytes(label).length), label, name);
     }
 
+    // @audit : duration is not bieng used now, so we can remove it?
     function _burnCommitment(
         uint256 duration,
         bytes32 commitment
