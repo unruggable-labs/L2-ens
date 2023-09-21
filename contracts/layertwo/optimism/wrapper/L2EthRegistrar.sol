@@ -426,7 +426,6 @@ contract L2EthRegistrar is
         // the labelhash of the label.
         bytes32 labelhash = keccak256(bytes(label));
         // Create the parent node.
-        bytes32 parentNode = bytes("\x03eth\x00").namehash(0);
         bytes32 node = _makeNode(ETH_NODE, labelhash);
 
         // Create the name of the .eth 2LD, using addlabel
@@ -530,9 +529,6 @@ contract L2EthRegistrar is
 
         delete (commitments[commitment]);
 
-        if (duration < minRegistrationDuration) {
-            revert DurationTooShort(duration);
-        }
     }
 
     function _makeNode(bytes32 node, bytes32 labelhash)
