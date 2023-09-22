@@ -30,6 +30,7 @@ error CannotSetNewCharLengthAmounts();
 error InvalidDuration(uint256 duration);
 error RandomNameNotFound();
 error WrongNumberOfCharsForRandomName(uint256 numChars);
+error InvalidReferrerCut(uint256 referrerCut);
 
 /**
  * @dev A registrar controller for registering and renewing names at fixed cost.
@@ -68,6 +69,7 @@ contract L2SubnameRegistrar is
         uint64 maxRegistrationDuration;
         uint16 minChars;
         uint16 maxChars;
+        uint16 referrerCut;
         uint256[] charAmounts;
     }
     
@@ -158,7 +160,7 @@ contract L2SubnameRegistrar is
         } 
 
         // Convert the unit price from USD to Wei.
-        return (usdToWei(unitPrice * duration), unitPrice * duration);
+        return (_usdToWei(unitPrice * duration), unitPrice * duration);
     }
 
     /**
@@ -219,6 +221,7 @@ contract L2SubnameRegistrar is
      * @param _maxRegistrationDuration The maximum duration a name can be registered for.
      * @param _minChars The minimum length a name can be.
      * @param _maxChars The maximum length a name can be.
+     * @param _referrerCut The percentage of the registration fee that will be given to the referrer.
      */
      
      function setParams(
@@ -228,7 +231,8 @@ contract L2SubnameRegistrar is
         uint64 _minRegistrationDuration, 
         uint64 _maxRegistrationDuration,
         uint16 _minChars,
-        uint16 _maxChars
+        uint16 _maxChars,
+        uint16 _referrerCut
     ) public{
 
         // If the allow list is being used then check to make sure the caller is on the allow list.
@@ -253,6 +257,14 @@ contract L2SubnameRegistrar is
         pricingData[parentNode].maxRegistrationDuration = _maxRegistrationDuration;
         pricingData[parentNode].minChars = _minChars;
         pricingData[parentNode].maxChars = _maxChars;
+
+        // The referrer cut can be a max of 50% (i.e. 5000)
+        if (_referrerCut > 5000) {
+            revert InvalidReferrerCut(_referrerCut);
+        }
+
+        pricingData[parentNode].referrerCut = _referrerCut;
+
     }
 
     /**
@@ -526,11 +538,11 @@ contract L2SubnameRegistrar is
 
             uint256 referrerAmount;
 
-            // If a referrer is specified then calculate the amount to be given to the referrer.
-            if (referrer != address(0)) {
+            // If a referrer and referrer cut is specified then calculate the amount to be given to the referrer.
+            if (referrer != address(0) && pricingData[parentNode].referrerCut > 0) {
 
                 // Calculate the amount to be given to the referrer.
-                referrerAmount = price * referrerCuts[referrer] / 10000;
+                referrerAmount = price * pricingData[parentNode].referrerCut / 10000;
 
                 //Increase the referrer's balance.
                 balances[referrer] += referrerAmount;
@@ -683,20 +695,6 @@ contract L2SubnameRegistrar is
         revert RandomNameNotFound();
     }
 
-    /**
-    * @dev Converts USD to Wei. 
-    * @param amount The amount of USD to be converted to Wei.
-    * @return The amount of Wei.
-    */
-    function usdToWei(uint256 amount) internal view returns (uint256) {
-
-        // Get the price of ETH in USD (with 8 digits of precision) from the oracle.
-        uint256 ethPrice = uint256(usdOracle.latestAnswer());
-
-        // Convert the amount of USD (with 18 digits of precision) to Wei.
-        return (amount * 1e8) / ethPrice;
-    }
-
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -709,6 +707,20 @@ contract L2SubnameRegistrar is
     }
 
     /* Internal functions */
+
+    /**
+    * @dev Converts USD to Wei. 
+    * @param amount The amount of USD to be converted to Wei.
+    * @return The amount of Wei.
+    */
+    function _usdToWei(uint256 amount) internal view returns (uint256) {
+
+        // Get the price of ETH in USD (with 8 digits of precision) from the oracle.
+        uint256 ethPrice = uint256(usdOracle.latestAnswer());
+
+        // Convert the amount of USD (with 18 digits of precision) to Wei.
+        return (amount * 1e8) / ethPrice;
+    }
 
     /**
      * @notice Checks to see if the commitment is valid and burns it.
