@@ -7,6 +7,7 @@ import {ENS} from "ens-contracts/registry/ENS.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
@@ -31,6 +32,7 @@ error InvalidDuration(uint256 duration);
 error RandomNameNotFound();
 error WrongNumberOfCharsForRandomName(uint256 numChars);
 error InvalidReferrerCut(uint256 referrerCut);
+error InvalidAddress(address addr);
 
 /**
  * @dev A registrar controller for registering and renewing names at fixed cost.
@@ -83,6 +85,9 @@ contract L2SubnameRegistrar is
 
     // Permanently disable the allow list.
     bool public allowListDisabled; 
+
+    // A nonce to use for registering .unruggable names.
+    uint256 public nonce;
 
     constructor(
         uint256 _minCommitmentAge,
@@ -601,25 +606,29 @@ contract L2SubnameRegistrar is
     /**
      * @notice Register a random number .unruggable name.
      * @param owner The address that will own the name.
-     * @param maxLoops The maximum number of times to check for an available name.
-     * @param numChars The number of characters in the name.
-     * @param salt The salt to be used for the commitment.
      */ 
 
     function registerUnruggable(
-        address owner,
-        uint256 maxLoops,
-        uint8 numChars,
-        uint256 salt
+        address owner
     ) public returns(bytes32 /* node */){
 
-        // Get a random label
-        bytes memory label = _getRandomName(maxLoops, numChars, salt);
+        // Make sure the owner is not the zero address.
+        if (owner == address(0)){
+            revert InvalidAddress(owner);
+        }
+
+        // increnmet the nonce to use for the name.
+        unchecked {
+            ++nonce;
+        }
+
+        // Get a label from the nonce, i.e. "1", "2", "3", etc.
+        string memory label = Strings.toString(nonce);
 
         // Register the .unruggable name using the NameWrapper setSubnodeRecord function.
         bytes32 node = nameWrapper.setSubnodeRecord(
             UNRUGGABLE_TLD_NODE,
-            string(label),
+            label,
             owner,
             address(0), // We don't have an approved address.  
             address(0), // We don't have a renewal controller.
@@ -630,69 +639,6 @@ contract L2SubnameRegistrar is
 
         return node;
 
-    }
-
-
-    /**
-     * @notice Create a random name using only digits. 
-     * @dev The function checks to see if the name is available for as many times as
-     *      maxLoops, and if a name is not found reverts. 
-     * @param maxLoops The maximum number of times to check for an available name.
-     * @param numChars The number of characters in the name.
-     * @param salt The salt to be used for the commitment. 
-     */
-
-    function _getRandomName(
-        uint256 maxLoops, 
-        uint8 numChars,
-        uint256 salt
-    ) 
-        internal view returns (bytes memory) {
-
-        // Make sure the number of characters is greater than 0.
-        if (numChars == 0){
-            revert("Number of characters must be greater than 0.");
-        }
-
-        // Make sure the number of loops is greater than 0.
-        if (maxLoops == 0){
-            revert("Max loops must be greater than 0.");
-        }
-
-        // Create a new bytes array to hold the random name.
-        bytes memory randomName = new bytes(numChars);
-
-        // Generate a "random number" (hash of the input data) using the block timestamp, msg.sender, and salt.
-        uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, salt)));
-
-
-        // Attempt to find a available name for maxLoops times. 
-        for (uint256 count = 0; count < maxLoops; count++) {
-
-            // Loop numChars times.
-            for (uint256 i = 0; i < numChars; i++) {
-
-                // Get the last digit of the random number.
-                uint8 randomDigit = uint8(randomNumber % 10); // Extract the last digit
-
-                // Convert the digit to UTF-8 bytes
-                randomName[i] = bytes1(uint8(0x30) + randomDigit);
-
-                // Shift the random number to remove the last digit
-                randomNumber /= 10;
-            }
-
-            // create the node using the UNRUGGABLE_TLD_NODE as the parent.
-            bytes32 node = _makeNode(UNRUGGABLE_TLD_NODE, keccak256(randomName));
-
-            // Check to see if the name is available.
-            if (ens.owner(node) == address(0)) {
-                return randomName;
-            }
-        }
-
-        // If we have not found an available name then revert.
-        revert RandomNameNotFound();
     }
 
     function supportsInterface(bytes4 interfaceId)

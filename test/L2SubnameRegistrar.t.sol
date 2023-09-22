@@ -1216,82 +1216,10 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function test_016____registerUnruggable__________RegisterADotUnruggableName() public{
 
-        bytes32 node = subnameRegistrar.registerUnruggable(account, 3, 12, 57654674567);
+        bytes32 node = subnameRegistrar.registerUnruggable(account);
 
         // Check to make sure the subname is owned account2 in the Name Wrapper.
         assertEq(nameWrapper.ownerOf(uint256(node)), account);
     }
 
-    function test_017____registerUnruggable__________FindingAvailableNameHappensOftenEnough() public{
-
-        // Add a revert counter.
-        uint256 errorRevertCount = 0;
-
-        /**
-         * Each iteration of the loop we call registerUnruggable, which attempts to find a "random" 
-         * number as a name. The first parameter is maxLoops which is the max number of times the function
-         * will attempt to find an available name. The next parameter is the number of characters.
-         * In this case we test for a limited name space of 00-99. 
-         */
-
-        // try 100 times in a loop using try catch
-        for (uint i = 0; i < 100; i++) {
-            try subnameRegistrar.registerUnruggable(account, 2, 2, i) returns (bytes32 node){
-                // Check to make sure the subname is owned by "account" in the L2NameWrapper.
-                assertEq(nameWrapper.ownerOf(uint256(node)), account);
-            } catch Error(string memory reason) {
-                // This is executed in case
-                // revert was called 
-                // and a reason string was provided.
-            } catch (bytes memory lowLevelData) {
-                // This is executed in case revert() was used
-                // or there was a failing assertion, division
-                // by zero, etc. 
-
-                // Revert count.
-                errorRevertCount++;
-            }
-        }
-
-        /**
-         * Make sure the error count is less than 24. This means that out of the 100 attempts to 
-         * find an available name in the range of 00-99, 24 of them failed. This is a 24% failure rate. 
-         * Increasing the number of tries per call, i.e. maxLoops, will decrease the failure rate, but 
-         * with rapidly diminishing returns. The greatest benefit is seen when increasing maxLoops from 1 to 2. 
-         */ 
-        
-        assertTrue(errorRevertCount < 24);
-    }
-
-    function test_018____registerUnruggable__________EdgeCasesAreHandled() public{
-
-        // Expect a revert if the number of characters is 0.
-        vm.expectRevert( bytes("Number of characters must be greater than 0."));
-
-        // Attempt to register a name with 0 characters.
-        bytes32 node = subnameRegistrar.registerUnruggable(account, 2, 0, 7);
-
-        /**
-         * Expect a revert if the number of characters is over 255, because the max value of uint8 is 255.
-         * Call subnameRegistrar.registerUnruggable using a low level call function so we can try to 
-         * register a name with 256 characters.
-         */
-
-        (bool success, /*bytes memory returnData*/) = address(subnameRegistrar).call(
-            abi.encodeWithSelector(
-                subnameRegistrar.registerUnruggable.selector,
-                account,
-                2, // The max number of loops.
-                256, // Number of characters. 
-                7 // The salt.
-            )
-        );
-
-        // Check to make sure the transaction was successful.
-        assertFalse(success);
-
-        // Expect revert if the number of loops is 0.
-        vm.expectRevert(bytes("Max loops must be greater than 0."));
-        bytes32 node2 = subnameRegistrar.registerUnruggable(account, 0, 7, 7);
-    }
 }
