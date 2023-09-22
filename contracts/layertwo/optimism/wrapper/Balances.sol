@@ -9,14 +9,10 @@ abstract contract Balances is Ownable {
     using Address for address payable;
 
     event OwnerCutSet(uint256 indexed ownerCut);
-    event ReferrerCutSet(uint256 indexed referrerCut);
     event AddressWithdrew(address indexed _address, uint256 indexed amount);
 
     // A mapping to store the balance of each referrer.
     mapping (address => uint256) public balances;
-
-    // A mapping to store the referrer cut percentage for each referrer.
-    mapping (address => uint256) public referrerCuts;
 
     // A variable to store the total balance of all referrers.
     uint256 public totalBalance;
@@ -83,17 +79,4 @@ abstract contract Balances is Ownable {
         ownerCut = _ownerCut;
         emit OwnerCutSet(_ownerCut);
     }
-
-    /**
-     * @notice A function to set the referrer cut percentage for a specific referrer.
-     * @dev We are using two decimal places of percision for the referrer cut percentage, 
-     *      i.e. 1% = 100, 10% = 1000.
-     * @param _referrerCut The percentage cut given to the referrer (0-10%).
-     */
-
-    function setReferrerCut(uint _referrerCut) public {
-        require(_referrerCut <= 1000, "Referrer cut cannot be more than 10%");
-        referrerCuts[msg.sender] = _referrerCut;
-        emit ReferrerCutSet(_referrerCut);
-    } 
 }
