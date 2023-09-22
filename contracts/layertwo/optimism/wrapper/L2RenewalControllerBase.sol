@@ -14,6 +14,7 @@ import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
 
 error InsufficientValue();
 error UnauthorizedAddress(bytes32 node);
+error InvalidReferrerCut(uint256 referrerCut);
 
 abstract contract L2RenewalControllerBase is 
     IRenewalController,
@@ -33,6 +34,9 @@ abstract contract L2RenewalControllerBase is
 
     // The NameWrapper and SubnameWrapper can be upgraded. 
     address[] public nameWrappers = new address[](1);
+
+    // The cut for the referrer.
+    uint256 public referrerCut;
 
     constructor(
         IL2NameWrapper _nameWrapper
@@ -57,6 +61,21 @@ abstract contract L2RenewalControllerBase is
     }
 
     /**
+     * @notice Sets the referrers cut to a maximum of 50%
+     * @param _referrerCut The amount of the referrers cut.
+     */
+    
+    function setReferrerCut(uint256 _referrerCut) public onlyOwner {
+
+        // The referrer cut can be a max of 50% (i.e. 5000)
+        if (_referrerCut > 5000) {
+            revert InvalidReferrerCut(_referrerCut);
+        }
+
+        referrerCut = _referrerCut;
+    }
+
+    /**
     * @dev Function to renew a name for a specified duration. 
     * @param name The name to be renewed in DNS format.
     * @param duration The duration for which the name should be renewed in years.
@@ -72,7 +91,8 @@ abstract contract L2RenewalControllerBase is
             nameWrappers.length-1,    
             name,
             referrer,
-            duration);
+            duration
+        );
     }
 
     /**
@@ -143,11 +163,11 @@ abstract contract L2RenewalControllerBase is
         {
             uint256 referrerAmount;
 
-            // If a referrer is specified then calculate the amount to be given to the referrer.
-            if (referrer != address(0)) {
+            // If a referrer  and referrer cut is specified then calculate the amount to be given to the referrer.
+            if (referrer != address(0) && referrerCut > 0) {
 
                 // Calculate the amount to be given to the referrer.
-                referrerAmount = priceEth * referrerCuts[referrer] / 10000;
+                referrerAmount = priceEth * referrerCut / 10000;
 
                 // Increase the referrer's balance
                 balances[referrer] += referrerAmount;
@@ -217,6 +237,7 @@ abstract contract L2RenewalControllerBase is
      * @param labelhash The labelhash of the label.
      * @return The node for the namehash and labelhash.
      */
+
     function _makeNode(bytes32 parentNode, bytes32 labelhash)
         private
         pure
