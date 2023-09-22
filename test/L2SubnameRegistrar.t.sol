@@ -182,7 +182,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             3600, 
             type(uint64).max,
             3, // min chars
-            32 // max length of a subname 
+            32, // max length of a subname 
+            100 // referrer cut of 1%
         );
 
         // Set the pricing for the subname registrar. 
@@ -289,7 +290,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             3601, 
             type(uint64).max,
             2, 
-            254
+            254,
+            100 // referrer cut of 1%
         );
 
         subnameRegistrar.allowName(bytes("\x03abc\x03eth\x00"),true);
@@ -303,7 +305,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             3601, 
             type(uint64).max,
             2, 
-            254
+            254,
+            100 // referrer cut of 1%
         );
 
         // Check to make sure the params have been set correctly. 
@@ -312,7 +315,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             uint64 _minRegistrationDuration, 
             uint64 _maxRegistrationDuration,
             uint16 _minChars, 
-            uint16 _maxChars
+            uint16 _maxChars,
+            uint16 _referrerCut
         ) = subnameRegistrar.pricingData(parentNode);
 
         assertEq(_offerSubames, false);
@@ -340,7 +344,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             3601, 
             type(uint64).max,
             2, 
-            254
+            254,
+            100 // referrer cut of 1%
         );
 
         subnameRegistrar.disableAllowList();
@@ -352,7 +357,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             3601, 
             type(uint64).max,
             2, 
-            254
+            254,
+            100 // referrer cut of 1%
         );
 
         // Check to make sure the params have been set correctly. 
@@ -361,7 +367,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             uint64 _minRegistrationDuration, 
             uint64 _maxRegistrationDuration,
             uint16 _minChars, 
-            uint16 _maxChars
+            uint16 _maxChars,
+            uint16 _referrerCut
         ) = subnameRegistrar.pricingData(parentNode);
 
         assertEq(_offerSubames, false);
@@ -385,7 +392,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             3601, 
             type(uint64).max,
             2, 
-            254 
+            254,
+            100 // referrer cut of 1%
         );
 
         // Check to make sure the params have been set correctly. 
@@ -394,7 +402,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             uint64 _minRegistrationDuration, 
             uint64 _maxRegistrationDuration,
             uint16 _minChars, 
-            uint16 _maxChars
+            uint16 _maxChars,
+            uint16 _referrerCut
         ) = subnameRegistrar.pricingData(parentNode);
 
         assertEq(_offerSubames, false);
@@ -423,7 +432,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             3601, 
             type(uint64).max,
             2, 
-            254 
+            254,
+            100 // referrer cut of 1%
         );
     }
 
@@ -585,7 +595,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             /*uint16 _minRegistrarionDuration*/, 
             /*uint64 _maxRegistrationDuration*/,
             /*uint16 _minChars*/, 
-            /*uint16 _maxChars*/
+            /*uint16 _maxChars*/,
+            /*uint16 _referrerCut*/
         ) = subnameRegistrar.pricingData(parentNode);
 
         assertEq(_offerSubames, false);
@@ -845,7 +856,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             oneYear, 
             oneYear,
             2, 
-            254
+            254,
+            100 // referrer cut of 1%
         );
 
          // Set the caller to _account and give the account 10 ETH.
@@ -926,7 +938,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             3600, 
             type(uint64).max,
             1, // min chars
-            32 // max length of a subname 
+            32, // max length of a subname 
+            100 // referrer cut of 1%
         );
 
         vm.stopPrank();
@@ -1045,7 +1058,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             3600, 
             3 * oneYear,
             1, // min chars
-            32 // max length of a subname 
+            32, // max length of a subname 
+            100 // referrer cut of 1%
         );
 
         vm.stopPrank();

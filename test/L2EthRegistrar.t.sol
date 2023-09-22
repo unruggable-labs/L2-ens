@@ -119,7 +119,8 @@ contract L2EthRegistrarTest is Test, GasHelpers {
             oneMonth, 
             type(uint64).max, //no maximum length of time. 
             3, // min three characters 
-            255 // max 255 characters
+            255, // max 255 characters
+            100 // referrer cut of 1%
         );
 
         // Set the pricing for the name registrar. 
@@ -239,13 +240,15 @@ contract L2EthRegistrarTest is Test, GasHelpers {
             3601, 
             type(uint64).max,
             2, 
-            254 
+            254,
+            100 
         );
 
         assertEq(ethRegistrar.minRegistrationDuration(), 3601);
         assertEq(ethRegistrar.maxRegistrationDuration(), type(uint64).max);
         assertEq(ethRegistrar.minChars(), 2);
         assertEq(ethRegistrar.maxChars(), 254);
+        assertEq(ethRegistrar.referrerCut(), 100);
     }
 
     function test_006____setPricingForAllLengths_____SetThePriceForAllLengthsOfNamesAtOneTime() public{
@@ -576,7 +579,8 @@ contract L2EthRegistrarTest is Test, GasHelpers {
             oneYear, 
             oneYear,
             2, 
-            254
+            254,
+            100
         );
 
          // Set the caller to _account and give the account 10 ETH.
@@ -688,7 +692,8 @@ contract L2EthRegistrarTest is Test, GasHelpers {
             oneMonth, 
             type(uint64).max, //no maximum length of time. 
             3, // min three characters 
-            100 // max 100 characters
+            100, // max 100 characters
+            100 // referrer cut of 1%
         );
 
          // Set the caller to account2 and give the account 10 ETH.
@@ -735,7 +740,8 @@ contract L2EthRegistrarTest is Test, GasHelpers {
             oneMonth, 
             type(uint64).max, //no maximum length of time. 
             3, // min three characters 
-            100 // max 100 characters
+            100, // max 100 characters
+            100 // referrer cut of 1%
         );
 
          // Set the caller to account2 and give the account 10 ETH.
@@ -782,7 +788,8 @@ contract L2EthRegistrarTest is Test, GasHelpers {
             oneMonth, 
             type(uint64).max, //no maximum length of time. 
             3, // min three characters 
-            100 // max 100 characters
+            100, // max 100 characters
+            100 // referrer cut of 1%
         );
 
          // Set the caller to account2 and give the account 10 ETH.
@@ -824,7 +831,8 @@ contract L2EthRegistrarTest is Test, GasHelpers {
             oneMonth, 
             type(uint64).max, //no maximum length of time. 
             3, // min three characters 
-            100 // max 100 characters
+            100, // max 100 characters
+            100 // referrer cut of 1%
         );
 
          // Set the caller to account2 and give the account 10 ETH.

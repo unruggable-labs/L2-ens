@@ -184,7 +184,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             3600, 
             type(uint64).max,
             3, // min chars
-            32 // max length of a subname 
+            32, // max length of a subname 
+            100 // referrer cut of 1%
         );
 
         // Set the pricing for the subname registrar. 

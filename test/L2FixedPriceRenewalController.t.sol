@@ -185,7 +185,8 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
             3600, 
             type(uint64).max,
             3, // min chars
-            32 // max length of a subname 
+            32, // max length of a subname 
+            100 // referrer cut of 1%
         );
 
         // Set the pricing for the subname registrar. 
@@ -441,29 +442,20 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
 
     function test_004____withdraw_______________________WithdrawsTheBalanceOfTheReferrer() public {
 
-        // Switch to accountReferrer.
-        vm.stopPrank();
-        vm.startPrank(accountReferrer);
 
         // Get the balance of accountReferrer. 
         uint256 balance = address(accountReferrer).balance;
 
-        /**
-         * Set the percentage of the sale that goes to the referrer to 1%. We
-         * are using two decimal places of percision, so 1% is 100.
-         */
-
-        subnameRegistrar.setReferrerCut(100);
-
-        // Make sure the referrer cut is correct.
-        assertEq(subnameRegistrar.referrerCuts(accountReferrer), 100);
-
-        // Switch to account.
-        vm.stopPrank();
-        vm.startPrank(account);
-
         // Register a subname, the name will be registered from account2 and owened by account2.
         bytes32 node = registerAndWrap(account2);
+
+        // Make the parent node. 
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        (,,,,,, uint16 pricingData) = subnameRegistrar.pricingData(parentNode);
+
+        // Make sure the referrer cut is 1%.
+        assertEq(pricingData, 100);
 
         // Switch to accountReferrer.
         vm.stopPrank();
@@ -576,26 +568,4 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
         subnameRegistrar.setOwnerCut(600);
 
     }
-
-    function test_004____setReferrerCut_________________SetsTheReferrerCut() public {
-
-        // Set the referrer cut to 1.11%.
-        subnameRegistrar.setReferrerCut(111);
-
-        // Check to make sure the referrer cut is correct.
-        assertEq(subnameRegistrar.referrerCuts(account), 111);
-
-    }
-
-    function test_004____setReferrerCut_________________RevertsIfReferrerCutSetHigherThanTenPercent() public {
-
-        // Revert because account 2 is not the owner.
-        vm.expectRevert("Referrer cut cannot be more than 10%");
-
-        // Set the owner cut to 11%.
-        subnameRegistrar.setReferrerCut(1100);
-
-    }
-
-
 }
