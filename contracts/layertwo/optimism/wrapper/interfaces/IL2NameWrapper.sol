@@ -25,12 +25,13 @@ uint32 constant CAN_EXTEND_EXPIRY = 1 << 17;
 uint32 constant IS_DOT_ETH = 1 << 18;
 
 // A filter for all the fuses that can be set by the parent name owner.
-uint32 constant PARENT_CONTROLLED_FUSES = 0xFFFF0000; // 0b11111111111111110000000000000000
+uint32 constant PARENT_CONTROLLED_FUSES = 0x00030000; // 0b00000000000000110000000000000000
 
 // A filter for all fuses the fuses that can be set by name owners.
 uint32 constant USER_SETTABLE_FUSES = 0x3007F; // 0b00000000000000110000000001111111 
 
 interface IL2NameWrapper is IERC1155 {
+
     event NameWrapped(
         bytes32 indexed node,
         bytes name,
@@ -42,6 +43,7 @@ interface IL2NameWrapper is IERC1155 {
     event NameUnwrapped(bytes32 indexed node, address owner);
 
     event FusesSet(bytes32 indexed node, uint32 fuses);
+
     event ExpiryExtended(bytes32 indexed node, uint64 expiry);
 
     function ens() external view returns (ENS);
@@ -83,7 +85,7 @@ interface IL2NameWrapper is IERC1155 {
     ) external;
 
     function setSubnodeRecord(
-        bytes32 node,
+        bytes32 parentNode,
         string calldata label,
         address owner,
         address approved,
@@ -91,7 +93,7 @@ interface IL2NameWrapper is IERC1155 {
         uint64 ttl,
         uint32 fuses,
         uint64 expiry
-    ) external returns (bytes32);
+    ) external returns (bytes32 node);
 
     function setRecord(
         bytes32 node,
@@ -101,16 +103,16 @@ interface IL2NameWrapper is IERC1155 {
     ) external;
 
     function setSubnodeOwner(
-        bytes32 node,
+        bytes32 parentNode,
         string calldata label,
-        address newOwner,
+        address owner,
         address approved,
         uint32 fuses,
         uint64 expiry
-    ) external returns (bytes32);
+    ) external returns (bytes32 node);
 
     function extendExpiry(
-        bytes32 node,
+        bytes32 parentNode,
         bytes32 labelhash,
         uint64 expiry
     ) external returns (uint64);
@@ -120,7 +122,6 @@ interface IL2NameWrapper is IERC1155 {
         address addr
     ) external view returns (bool);
 
-    // wrapTLD function 
     function wrapTLD(
         bytes calldata name,
         address wrappedOwner,
@@ -152,6 +153,5 @@ interface IL2NameWrapper is IERC1155 {
         bytes32 node,
         uint32 fuseMask
     ) external view returns (bool);
-    // just deleting this temporarily
 
 }
