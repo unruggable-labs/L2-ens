@@ -7,6 +7,7 @@ import {ENS} from "ens-contracts/registry/ENS.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
@@ -30,6 +31,8 @@ error CannotSetNewCharLengthAmounts();
 error InvalidDuration(uint256 duration);
 error RandomNameNotFound();
 error WrongNumberOfCharsForRandomName(uint256 numChars);
+error InvalidReferrerCut(uint256 referrerCut);
+error InvalidAddress(address addr);
 
 /**
  * @dev A registrar controller for registering and renewing names at fixed cost.
@@ -68,6 +71,7 @@ contract L2SubnameRegistrar is
         uint64 maxRegistrationDuration;
         uint16 minChars;
         uint16 maxChars;
+        uint16 referrerCut;
         uint256[] charAmounts;
     }
     
@@ -81,6 +85,9 @@ contract L2SubnameRegistrar is
 
     // Permanently disable the allow list.
     bool public allowListDisabled; 
+
+    // A nonce to use for registering .unruggable names.
+    uint256 public nonce;
 
     constructor(
         uint256 _minCommitmentAge,
@@ -158,7 +165,7 @@ contract L2SubnameRegistrar is
         } 
 
         // Convert the unit price from USD to Wei.
-        return (usdToWei(unitPrice * duration), unitPrice * duration);
+        return (_usdToWei(unitPrice * duration), unitPrice * duration);
     }
 
     /**
@@ -219,6 +226,7 @@ contract L2SubnameRegistrar is
      * @param _maxRegistrationDuration The maximum duration a name can be registered for.
      * @param _minChars The minimum length a name can be.
      * @param _maxChars The maximum length a name can be.
+     * @param _referrerCut The percentage of the registration fee that will be given to the referrer.
      */
      
      function setParams(
@@ -228,7 +236,8 @@ contract L2SubnameRegistrar is
         uint64 _minRegistrationDuration, 
         uint64 _maxRegistrationDuration,
         uint16 _minChars,
-        uint16 _maxChars
+        uint16 _maxChars,
+        uint16 _referrerCut
     ) public{
 
         // If the allow list is being used then check to make sure the caller is on the allow list.
@@ -253,6 +262,14 @@ contract L2SubnameRegistrar is
         pricingData[parentNode].maxRegistrationDuration = _maxRegistrationDuration;
         pricingData[parentNode].minChars = _minChars;
         pricingData[parentNode].maxChars = _maxChars;
+
+        // The referrer cut can be a max of 50% (i.e. 5000)
+        if (_referrerCut > 5000) {
+            revert InvalidReferrerCut(_referrerCut);
+        }
+
+        pricingData[parentNode].referrerCut = _referrerCut;
+
     }
 
     /**
@@ -526,11 +543,11 @@ contract L2SubnameRegistrar is
 
             uint256 referrerAmount;
 
-            // If a referrer is specified then calculate the amount to be given to the referrer.
-            if (referrer != address(0)) {
+            // If a referrer and referrer cut is specified then calculate the amount to be given to the referrer.
+            if (referrer != address(0) && pricingData[parentNode].referrerCut > 0) {
 
                 // Calculate the amount to be given to the referrer.
-                referrerAmount = price * referrerCuts[referrer] / 10000;
+                referrerAmount = price * pricingData[parentNode].referrerCut / 10000;
 
                 //Increase the referrer's balance.
                 balances[referrer] += referrerAmount;
@@ -589,25 +606,29 @@ contract L2SubnameRegistrar is
     /**
      * @notice Register a random number .unruggable name.
      * @param owner The address that will own the name.
-     * @param maxLoops The maximum number of times to check for an available name.
-     * @param numChars The number of characters in the name.
-     * @param salt The salt to be used for the commitment.
      */ 
 
     function registerUnruggable(
-        address owner,
-        uint256 maxLoops,
-        uint8 numChars,
-        uint256 salt
+        address owner
     ) public returns(bytes32 /* node */){
 
-        // Get a random label
-        bytes memory label = _getRandomName(maxLoops, numChars, salt);
+        // Make sure the owner is not the zero address.
+        if (owner == address(0)){
+            revert InvalidAddress(owner);
+        }
+
+        // increnmet the nonce to use for the name.
+        unchecked {
+            ++nonce;
+        }
+
+        // Get a label from the nonce, i.e. "1", "2", "3", etc.
+        string memory label = Strings.toString(nonce);
 
         // Register the .unruggable name using the NameWrapper setSubnodeRecord function.
         bytes32 node = nameWrapper.setSubnodeRecord(
             UNRUGGABLE_TLD_NODE,
-            string(label),
+            label,
             owner,
             address(0), // We don't have an approved address.  
             address(0), // We don't have a renewal controller.
@@ -618,83 +639,6 @@ contract L2SubnameRegistrar is
 
         return node;
 
-    }
-
-
-    /**
-     * @notice Create a random name using only digits. 
-     * @dev The function checks to see if the name is available for as many times as
-     *      maxLoops, and if a name is not found reverts. 
-     * @param maxLoops The maximum number of times to check for an available name.
-     * @param numChars The number of characters in the name.
-     * @param salt The salt to be used for the commitment. 
-     */
-
-    function _getRandomName(
-        uint256 maxLoops, 
-        uint8 numChars,
-        uint256 salt
-    ) 
-        internal view returns (bytes memory) {
-
-        // Make sure the number of characters is greater than 0.
-        if (numChars == 0){
-            revert("Number of characters must be greater than 0.");
-        }
-
-        // Make sure the number of loops is greater than 0.
-        if (maxLoops == 0){
-            revert("Max loops must be greater than 0.");
-        }
-
-        // Create a new bytes array to hold the random name.
-        bytes memory randomName = new bytes(numChars);
-
-        // Generate a "random number" (hash of the input data) using the block timestamp, msg.sender, and salt.
-        uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, salt)));
-
-
-        // Attempt to find a available name for maxLoops times. 
-        for (uint256 count = 0; count < maxLoops; count++) {
-
-            // Loop numChars times.
-            for (uint256 i = 0; i < numChars; i++) {
-
-                // Get the last digit of the random number.
-                uint8 randomDigit = uint8(randomNumber % 10); // Extract the last digit
-
-                // Convert the digit to UTF-8 bytes
-                randomName[i] = bytes1(uint8(0x30) + randomDigit);
-
-                // Shift the random number to remove the last digit
-                randomNumber /= 10;
-            }
-
-            // create the node using the UNRUGGABLE_TLD_NODE as the parent.
-            bytes32 node = _makeNode(UNRUGGABLE_TLD_NODE, keccak256(randomName));
-
-            // Check to see if the name is available.
-            if (ens.owner(node) == address(0)) {
-                return randomName;
-            }
-        }
-
-        // If we have not found an available name then revert.
-        revert RandomNameNotFound();
-    }
-
-    /**
-    * @dev Converts USD to Wei. 
-    * @param amount The amount of USD to be converted to Wei.
-    * @return The amount of Wei.
-    */
-    function usdToWei(uint256 amount) internal view returns (uint256) {
-
-        // Get the price of ETH in USD (with 8 digits of precision) from the oracle.
-        uint256 ethPrice = uint256(usdOracle.latestAnswer());
-
-        // Convert the amount of USD (with 18 digits of precision) to Wei.
-        return (amount * 1e8) / ethPrice;
     }
 
     function supportsInterface(bytes4 interfaceId)
@@ -709,6 +653,20 @@ contract L2SubnameRegistrar is
     }
 
     /* Internal functions */
+
+    /**
+    * @dev Converts USD to Wei. 
+    * @param amount The amount of USD to be converted to Wei.
+    * @return The amount of Wei.
+    */
+    function _usdToWei(uint256 amount) internal view returns (uint256) {
+
+        // Get the price of ETH in USD (with 8 digits of precision) from the oracle.
+        uint256 ethPrice = uint256(usdOracle.latestAnswer());
+
+        // Convert the amount of USD (with 18 digits of precision) to Wei.
+        return (amount * 1e8) / ethPrice;
+    }
 
     /**
      * @notice Checks to see if the commitment is valid and burns it.

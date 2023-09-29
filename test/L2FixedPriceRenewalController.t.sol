@@ -185,7 +185,8 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
             3600, 
             type(uint64).max,
             3, // min chars
-            32 // max length of a subname 
+            32, // max length of a subname 
+            100 // referrer cut of 1%
         );
 
         // Set the pricing for the subname registrar. 
@@ -439,48 +440,32 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
 
     }
 
-    // Test the withdraw function.
-    function test_004____withdraw_______________________WithdrawsTheBalance() public {
+    function test_004____withdraw_______________________WithdrawsTheBalanceOfTheReferrer() public {
 
-        // Switch to accountReferrer.
-        vm.stopPrank();
-        vm.startPrank(accountReferrer);
 
-        // Get the balance of account. 
+        // Get the balance of accountReferrer. 
         uint256 balance = address(accountReferrer).balance;
-
-        // console log the balance of accountReferrer.
-        console.log("accountReferrer balance: %s", balance);
-
-        /**
-         * Set the percentage of the sale that goes to the referrer to 1%. We
-         * are using two decimal places of percision, so 1% is 100.
-         */
-
-        subnameRegistrar.setReferrerCut(100);
-
-        // Make sure the referrer cut is correct.
-        assertEq(subnameRegistrar.referrerCuts(accountReferrer), 100);
-
-        // Switch to account.
-        vm.stopPrank();
-        vm.startPrank(account);
 
         // Register a subname, the name will be registered from account2 and owened by account2.
         bytes32 node = registerAndWrap(account2);
 
+        // Make the parent node. 
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        (,,,,,, uint16 pricingData) = subnameRegistrar.pricingData(parentNode);
+
+        // Make sure the referrer cut is 1%.
+        assertEq(pricingData, 100);
+
         // Switch to accountReferrer.
         vm.stopPrank();
         vm.startPrank(accountReferrer);
 
-        // Withdraw the balance of account. 
+        // Withdraw the balance of referrer account. 
         subnameRegistrar.withdraw();
 
         // Get the new balance of account.
         uint256 newBalance = address(accountReferrer).balance;
-
-        // console log the new balance of accountReferrer.
-        console.log("accountReferrer balance: %s", newBalance);
 
         // Check to make sure that the balance increased.
         assertEq(newBalance > balance, true);
@@ -489,7 +474,28 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
 
     } 
 
-        function test_004____withdraw_______________________RevertsIfBalanceIsZero() public {
+    function test_004____withdraw_______________________WithdrawsTheBalanceOfTheOwner() public {
+
+        // Get the balance of account. 
+        uint256 balance = address(account).balance;
+
+        // Register a subname, the name will be registered from account2 and owened by account2.
+        bytes32 node = registerAndWrap(account2);
+
+        // Withdraw the balance of account. 
+        subnameRegistrar.withdraw();
+
+        // Get the new balance of account.
+        uint256 newBalance = address(account).balance;
+
+        // Check to make sure that the balance increased.
+        assertEq(newBalance > balance, true);
+
+        // @audit - This just checks to see if the balance increased, but not by how much. 
+
+    } 
+
+    function test_004____withdraw_______________________RevertsIfBalanceIsZero() public {
 
         // Register a subname.
         bytes32 node = registerAndWrap(account2);
@@ -516,6 +522,20 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
 
     } 
 
+    function test_004____withdraw_______________________RevertsIfReferrerBalanceIsZero() public {
+
+        // Switch to accountReferrer.
+        vm.stopPrank();
+        vm.startPrank(accountReferrer);
+
+        // Withdraw the balance of account again and this time make sure it reverts. 
+        vm.expectRevert(bytes("Address's balance is 0"));
+
+        // Withdraw the balance of referrer account. 
+        subnameRegistrar.withdraw();
+
+    } 
+
     function test_004____setOwnerCut____________________SetsTheOwnerCut() public {
 
         // Set the owner cut to 1%.
@@ -526,5 +546,26 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
 
     }
 
+    function test_004____setOwnerCut____________________RevertsIfCallerIsNotTheOwnerOfTheContract() public {
 
+        // Switch to account 2.
+        vm.stopPrank();
+        vm.startPrank(account2); 
+
+        // Revert because account 2 is not the owner.
+        vm.expectRevert("Only the owner can set the cut");
+
+        // Set the owner cut to 1%.
+        subnameRegistrar.setOwnerCut(100);
+    }
+
+    function test_004____setOwnerCut____________________RevertsIfTheOwnerCutIsMoreThanFivePercent() public {
+
+        // Revert because account 2 is not the owner.
+        vm.expectRevert("Owner cut cannot be more than 5%");
+
+        // Set the owner cut to 6%.
+        subnameRegistrar.setOwnerCut(600);
+
+    }
 }

@@ -39,7 +39,8 @@ interface ISubnameRegistrar {
         uint64 _minRegistrationDuration,
         uint64 _maxRegistrationDuration,
         uint16 _minChars,
-        uint16 _maxChars
+        uint16 _maxChars,
+        uint16 _referrerCut
     ) external;
 
     function setPricingForAllLengths(

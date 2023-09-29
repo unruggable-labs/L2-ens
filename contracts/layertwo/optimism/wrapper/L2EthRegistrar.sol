@@ -30,6 +30,7 @@ error CannotSetNewCharLengthAmounts();
 error InvalidDuration(uint256 duration);
 error LabelTooShort();
 error LabelTooLong();
+error InvalidReferrerCut(uint256 referrerCut);
 
 /**
  * @dev A registrar controller for registering and renewing names at fixed cost.
@@ -58,14 +59,13 @@ contract L2EthRegistrar is
     // Chainlink oracle address
     IAggregatorInterface public immutable usdOracle;
 
-
     // The pricing and character requirements for .eth 2LDs, e.g. vitalik.eth.
     uint64 public minRegistrationDuration;
     uint64 public maxRegistrationDuration;
     uint16 public minChars;
     uint16 public maxChars;
+    uint16 public referrerCut;
     uint256[] public charAmounts;
-
     
     mapping(bytes32 => uint256) public commitments;
 
@@ -136,12 +136,12 @@ contract L2EthRegistrar is
 
             }
         } else {
-            //If there is no pricing data, set the price to 0.
-            unitPrice = 0;
+            //If there is no pricing data, return 0, i.e. free.
+            return (0, 0);
         }
 
         // Convert the unit price from USD to Wei.
-        return (usdToWei(unitPrice * duration), unitPrice * duration);
+        return (_usdToWei(unitPrice * duration), unitPrice * duration);
     }
 
     /**
@@ -181,7 +181,8 @@ contract L2EthRegistrar is
         uint64 _minRegistrationDuration, 
         uint64 _maxRegistrationDuration,
         uint16 _minChars,
-        uint16 _maxChars
+        uint16 _maxChars,
+        uint16 _referrerCut
     ) public onlyOwner {
 
         // Set the pricing for subnames of the parent node.
@@ -189,6 +190,13 @@ contract L2EthRegistrar is
         maxRegistrationDuration = _maxRegistrationDuration;
         minChars = _minChars;
         maxChars = _maxChars;
+
+        // The referrer cut can be a max of 50% (i.e. 5000)
+        if (_referrerCut > 5000) {
+            revert InvalidReferrerCut(_referrerCut);
+        }
+
+        referrerCut = _referrerCut;
     }
 
     /**
@@ -363,7 +371,7 @@ contract L2EthRegistrar is
             if (referrer != address(0)) {
 
                 // Calculate the amount to be given to the referrer.
-                referrerAmount = price * referrerCuts[referrer] / 10000;
+                referrerAmount = price * referrerCut / 10000;
 
                 //Increase the referrer's balance.
                 balances[referrer] += referrerAmount;
@@ -426,7 +434,6 @@ contract L2EthRegistrar is
         // the labelhash of the label.
         bytes32 labelhash = keccak256(bytes(label));
         // Create the parent node.
-        bytes32 parentNode = bytes("\x03eth\x00").namehash(0);
         bytes32 node = _makeNode(ETH_NODE, labelhash);
 
         // Create the name of the .eth 2LD, using addlabel
@@ -434,23 +441,6 @@ contract L2EthRegistrar is
 
         // Get the owners of the name and the parent name.
         address nodeOwner = nameWrapper.ownerOf(uint256(node));
-
-        // remove the access control check, because anyone can renew a .eth 2LD name. 
-        if( msg.sender != nodeOwner && nameWrapper.isApprovedForAll(nodeOwner, msg.sender)){
-            revert UnauthorizedAddress(node);
-        }
-
-        // Create a block to solve a stack too deep error.
-        {
-            (,, uint64 nodeExpiry) = nameWrapper.getData(uint256(node));
-
-            // Check to see if the duration is too long and
-            // if it is set the duration.
-            (,, uint64 parentExpiry) = nameWrapper.getData(uint256(parentNode));
-            if (nodeExpiry + duration > parentExpiry) {
-                duration = parentExpiry - nodeExpiry;
-            }
-        }
 
         // Get the price for the duration.
         (uint256 priceEth,) = rentPrice(name, duration);
@@ -466,7 +456,7 @@ contract L2EthRegistrar is
             if (referrer != address(0)) {
 
                 // Calculate the amount to be given to the referrer.
-                referrerAmount = priceEth * referrerCuts[referrer] / 10000;
+                referrerAmount = priceEth * referrerCut / 10000;
 
                 // Increase the referrer's balance
                 balances[referrer] += referrerAmount;
@@ -489,20 +479,6 @@ contract L2EthRegistrar is
         }
 
     }
-    
-    /**
-    * @dev Converts USD to Wei. 
-    * @param amount The amount of USD to be converted to Wei.
-    * @return The amount of Wei.
-    */
-    function usdToWei(uint256 amount) internal view returns (uint256) {
-
-        // Get the price of ETH in USD (with 8 digits of precision) from the oracle.
-        uint256 ethPrice = uint256(usdOracle.latestAnswer());
-
-        // Convert the amount of USD (with 18 digits of precision) to Wei.
-        return (amount * 1e8) / ethPrice;
-    }
 
     function supportsInterface(bytes4 interfaceId)
         public
@@ -516,6 +492,20 @@ contract L2EthRegistrar is
     }
 
     /* Internal functions */
+    
+    /**
+    * @dev Converts USD to Wei. 
+    * @param amount The amount of USD to be converted to Wei.
+    * @return The amount of Wei.
+    */
+    function _usdToWei(uint256 amount) internal view returns (uint256) {
+
+        // Get the price of ETH in USD (with 8 digits of precision) from the oracle.
+        uint256 ethPrice = uint256(usdOracle.latestAnswer());
+
+        // Convert the amount of USD (with 18 digits of precision) to Wei.
+        return (amount * 1e8) / ethPrice;
+    }
 
     function _addLabel(
         string memory label,
@@ -530,6 +520,7 @@ contract L2EthRegistrar is
         return abi.encodePacked(uint8(bytes(label).length), label, name);
     }
 
+    // @audit : duration is not bieng used now, so we can remove it?
     function _burnCommitment(
         uint256 duration,
         bytes32 commitment
@@ -547,9 +538,6 @@ contract L2EthRegistrar is
 
         delete (commitments[commitment]);
 
-        if (duration < minRegistrationDuration) {
-            revert DurationTooShort(duration);
-        }
     }
 
     function _makeNode(bytes32 node, bytes32 labelhash)

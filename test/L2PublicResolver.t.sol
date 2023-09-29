@@ -184,7 +184,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             3600, 
             type(uint64).max,
             3, // min chars
-            32 // max length of a subname 
+            32, // max length of a subname 
+            100 // referrer cut of 1%
         );
 
         // Set the pricing for the subname registrar. 
@@ -424,9 +425,26 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     }
 
+
+    function test_014____setApprovalForAll___________RevertIfSettingApprovalToSelf() public{
+
+        bytes32 node = registerAndWrap(account2);
+
+        // Switch caller to account2
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        // Revert if setting the address to the caller.
+        vm.expectRevert("Setting delegate status for self");
+
+        // Try to approve account2.
+        publicResolver.approve(node, account2, true);
+
+    }
+
     function test_014____setApprovalForAll___________SetAnApprovedController() public{
 
-        bytes32 parentNode = registerAndWrap(account2);
+        bytes32 node = registerAndWrap(account2);
 
         assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
         assertEq(subnameRegistrar.available(bytes("\x08coolname\x03abc\x03eth\x00")), true);
@@ -458,16 +476,16 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             0 /* fuses */
         );
 
-        bytes32 node = bytes("\x08coolname\x03abc\x03eth\x00").namehash(0);
+        bytes32 coolNode = bytes("\x08coolname\x03abc\x03eth\x00").namehash(0);
 
         // Check to make sure the subname is owned account2 in the Name Wrapper.
-        assertEq(nameWrapper.ownerOf(uint256(node)), account2);
+        assertEq(nameWrapper.ownerOf(uint256(coolNode)), account2);
         
         // Set an ethereum address on the public resolver for account2
-        publicResolver.setAddr(node, account2);
+        publicResolver.setAddr(coolNode, account2);
 
         // Check to make sure the public resolver has the correct address for the subname.
-        assertEq(publicResolver.addr(node), account2);
+        assertEq(publicResolver.addr(coolNode), account2);
 
         // Approve accountReferrer to manage the subname in the public resolver.
         publicResolver.setApprovalForAll(accountReferrer, true);
@@ -477,10 +495,26 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         vm.startPrank(accountReferrer);
 
         // Set the address for the subname in the public resolver.
-        publicResolver.setAddr(node, accountReferrer);
+        publicResolver.setAddr(coolNode, accountReferrer);
 
         // Check to make sure the public resolver has the correct address for the subname.
-        assertEq(publicResolver.addr(node), accountReferrer);
+        assertEq(publicResolver.addr(coolNode), accountReferrer);
+
+    }
+
+    function test_014____setApprovalForAll___________RevertIfSettingApprovalForAllToSelf() public{
+
+        bytes32 node = registerAndWrap(account2);
+
+        // Switch caller to account2
+        vm.stopPrank();
+        vm.startPrank(account2);
+
+        // Revert if setting the address to the caller.
+        vm.expectRevert("ERC1155: setting approval status for self");
+
+        // Try to approve account2.
+        publicResolver.setApprovalForAll(account2, true);
 
     }
 }
