@@ -14,10 +14,12 @@ import {
         WrongNumberOfCharsForRandomName,
         InvalidDuration,
         UnexpiredCommitmentExists,
-        CommitmentTooOld
+        CommitmentTooOld,
+        InvalidAddress,
+        InvalidReferrerCut
         
         } from "optimism/wrapper/L2SubnameRegistrar.sol";
-import {ISubnameRegistrar} from "optimism/wrapper/interfaces/ISubnameRegistrar.sol";
+import {IL2SubnameRegistrar} from "optimism/wrapper/interfaces/IL2SubnameRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
@@ -28,7 +30,7 @@ import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
 import {USDOracleMock} from "optimism/wrapper/mocks/USDOracleMock.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {IL2RenewalController} from "optimism/wrapper/interfaces/IL2RenewalController.sol";
 
 import {IERC1155MetadataURI} from "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
 import {GasHelpers} from "./GasHelpers.sol";
@@ -60,7 +62,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
     address accountReferrer = 0x0000000000000000000000000000000000005627;
 
     // Set a dummy address for the renewal controller.
-    IRenewalController renewalController = IRenewalController(address(0x0000000000000000000000000000000000000007));
+    IL2RenewalController renewalController = IL2RenewalController(address(0x0000000000000000000000000000000000000007));
 
     // Set a dummy address for the custom resolver.
     address customResolver = 0x0000000000000000000000000000000000000007;
@@ -178,7 +180,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         subnameRegistrar.setParams(
             parentNode, 
             true, 
-            IRenewalController(address(subnameRegistrar)), 
+            IL2RenewalController(address(subnameRegistrar)), 
             3600, 
             type(uint64).max,
             3, // min chars
@@ -242,7 +244,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
     function test_001____supportsInterface___________SupportsCorrectInterfaces() public {
 
         // Check for the ISubnameWrapper interface.  
-        assertEq(subnameRegistrar.supportsInterface(type(ISubnameRegistrar).interfaceId), true);
+        assertEq(subnameRegistrar.supportsInterface(type(IL2SubnameRegistrar).interfaceId), true);
 
         // Check for the IERC165 interface.  
         assertEq(subnameRegistrar.supportsInterface(type(IERC165).interfaceId), true);
@@ -311,7 +313,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         // Check to make sure the params have been set correctly. 
         (   bool _offerSubames, 
-            IRenewalController _renewalController, 
+            IL2RenewalController _renewalController, 
             uint64 _minRegistrationDuration, 
             uint64 _maxRegistrationDuration,
             uint16 _minChars, 
@@ -363,7 +365,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         // Check to make sure the params have been set correctly. 
         (   bool _offerSubames, 
-            IRenewalController _renewalController, 
+            IL2RenewalController _renewalController, 
             uint64 _minRegistrationDuration, 
             uint64 _maxRegistrationDuration,
             uint16 _minChars, 
@@ -398,7 +400,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         // Check to make sure the params have been set correctly. 
         (   bool _offerSubames, 
-            IRenewalController _renewalController, 
+            IL2RenewalController _renewalController, 
             uint64 _minRegistrationDuration, 
             uint64 _maxRegistrationDuration,
             uint16 _minChars, 
@@ -434,6 +436,26 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             2, 
             254,
             100 // referrer cut of 1%
+        );
+    }
+
+    function test_005____setParams___________________RevertsWhenReferrerCutIsGreaterThan50Percent() public{
+
+        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        registerAndWrap(account);
+
+        // Revert when the referrer cut is greater than 5000.
+        vm.expectRevert( abi.encodeWithSelector(InvalidReferrerCut.selector, 5001));
+
+        subnameRegistrar.setParams(
+            parentNode, 
+            false, 
+            renewalController, 
+            3601, 
+            type(uint64).max,
+            2, 
+            254,
+            5001 // referrer cut of 50.01%
         );
     }
 
@@ -934,7 +956,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         subnameRegistrar.setParams(
             parentNode, 
             false, 
-            IRenewalController(address(subnameRegistrar)), 
+            IL2RenewalController(address(subnameRegistrar)), 
             3600, 
             type(uint64).max,
             1, // min chars
@@ -1054,7 +1076,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         subnameRegistrar.setParams(
             parentNode, 
             true, 
-            IRenewalController(address(subnameRegistrar)), 
+            IL2RenewalController(address(subnameRegistrar)), 
             3600, 
             3 * oneYear,
             1, // min chars
@@ -1222,4 +1244,11 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         assertEq(nameWrapper.ownerOf(uint256(node)), account);
     }
 
+    function test_016____registerUnruggable__________RevertIfOwenerIsTheZeroAddress() public{
+
+        // Revert if the owner is the zero address with InvalidAddress(owner)
+        vm.expectRevert( abi.encodeWithSelector(InvalidAddress.selector, address(0)));
+
+        bytes32 node = subnameRegistrar.registerUnruggable(address(0));
+    }
 }

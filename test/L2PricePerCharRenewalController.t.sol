@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import {L2SubnameRegistrar} from "optimism/wrapper/L2SubnameRegistrar.sol";
-import {ISubnameRegistrar} from "optimism/wrapper/interfaces/ISubnameRegistrar.sol";
+import {IL2SubnameRegistrar} from "optimism/wrapper/interfaces/IL2SubnameRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
@@ -21,12 +21,13 @@ import {IERC165} from "openzeppelin-contracts/contracts/utils/introspection/IERC
 import {IAddrResolver} from "ens-contracts/resolvers/profiles/IAddrResolver.sol";
 
 import {L2PricePerCharRenewalController, CannotSetNewCharLengthAmount} from "optimism/wrapper/renewalControllers/L2PricePerCharRenewalController.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {IL2RenewalController} from "optimism/wrapper/interfaces/IL2RenewalController.sol";
 import {IPricePerCharRenewalController} from "optimism/wrapper/interfaces/rCInterfaces/IPricePerCharRenewalController.sol";
 import {UnauthorizedAddress, InsufficientValue} from "optimism/wrapper/L2RenewalControllerBase.sol";
 import {IL2NameWrapperUpgrade} from "optimism/wrapper/interfaces/IL2NameWrapperUpgrade.sol";
 
 error ZeroLengthLabel();
+error InvalidReferrerCut(uint256 referrerCut);
 
 contract L2PricePerCharRenewalControllerTest is Test, GasHelpers {
 
@@ -54,7 +55,7 @@ contract L2PricePerCharRenewalControllerTest is Test, GasHelpers {
     address hacker = 0x0000000000000000000000000000000000001101; 
 
     // Set a dummy address for the renewal controller.
-    IRenewalController renewalController = IRenewalController(address(0x0000000000000000000000000000000000000007));
+    IL2RenewalController renewalController = IL2RenewalController(address(0x0000000000000000000000000000000000000007));
 
     // Set a dummy address for the custom resolver.
     address customResolver = 0x0000000000000000000000000000000000000007;
@@ -175,7 +176,7 @@ contract L2PricePerCharRenewalControllerTest is Test, GasHelpers {
 
         uint256[] memory charAmounts = new uint256[](4);
         charAmounts[0] = 158548959918; // (≈$5/year) calculated as $/sec with 18 decimals.
-        charAmounts[1] = 158548959918;
+        charAmounts[1] = 158548959917;
         charAmounts[2] = 0;
 
         // Set the pricing for the renewal controller. 
@@ -197,7 +198,7 @@ contract L2PricePerCharRenewalControllerTest is Test, GasHelpers {
         subnameRegistrar.setParams(
             parentNode, 
             true, 
-            IRenewalController(address(pricePerCharRenewalController)), 
+            IL2RenewalController(address(pricePerCharRenewalController)), 
             3600, 
             type(uint64).max,
             3, // min chars
@@ -261,7 +262,7 @@ contract L2PricePerCharRenewalControllerTest is Test, GasHelpers {
     function test_001____supportsInterface___________SupportsCorrectInterfaces() public {
 
         // Check for the ISubnameWrapper interface.  
-        assertEq(pricePerCharRenewalController.supportsInterface(type(IRenewalController).interfaceId), true);
+        assertEq(pricePerCharRenewalController.supportsInterface(type(IL2RenewalController).interfaceId), true);
 
         // Check for the IERC165 interface.
         assertEq(pricePerCharRenewalController.supportsInterface(type(IERC165).interfaceId), true);
@@ -337,8 +338,8 @@ contract L2PricePerCharRenewalControllerTest is Test, GasHelpers {
         );
     }
 
-    // Revert if too little money was sent to renew the subname.
-    function test_002____renew_________________________RevertsIfNotEnoughMoney() public {
+    // Revert if too little eth was sent to renew the subname.
+    function test_002____renew_________________________RevertsIfNotEnoughEth() public {
 
         bytes32 node = registerAndWrap(account2);
 
@@ -495,7 +496,7 @@ contract L2PricePerCharRenewalControllerTest is Test, GasHelpers {
 
     }
 
-    function test_003____getPrice_______________________GetsThePriceOfTheRenewal() public {
+    function test_003____rentPrice______________________GetsThePriceOfTheRenewal() public {
 
         bytes32 node = registerAndWrap(account2);
 
@@ -505,19 +506,19 @@ contract L2PricePerCharRenewalControllerTest is Test, GasHelpers {
 
         // Get the price of the renewal.
         (uint256 priceEth, uint256 priceUsd) = pricePerCharRenewalController.rentPrice(
-            "\x03yz\x03abc\x03eth\x00",
+            "\x01z\x03abc\x03eth\x00",
             1
         );
 
         // Check to make sure the price is correct.
-        assertEq(priceUsd, 158548959918);
+        assertEq(priceUsd, 158548959917);
 
         // @audit - We are not checking the Eth price, here, the only way to check it is to redo the calculation.
         // Maybe just make sure it makes sense. 
 
     }
 
-        function test_003____getPrice_______________________GetsTheDefaultPriceIfTheCharPriceIsZero() public {
+    function test_003____rentPrice______________________GetsTheDefaultPriceIfTheCharPriceIsZero() public {
 
         bytes32 node = registerAndWrap(account2);
 
@@ -527,30 +528,8 @@ contract L2PricePerCharRenewalControllerTest is Test, GasHelpers {
 
         // Get the price of the renewal.
         (uint256 priceEth, uint256 priceUsd) = pricePerCharRenewalController.rentPrice(
-            "\x03yz\x03abc\x03eth\x00",
+            "\x03xyz\x03abc\x03eth\x00",
             1
-        );
-
-        // Check to make sure the price is correct.
-        assertEq(priceUsd, 158548959918);
-
-        // @audit - We are not checking the Eth price, here, the only way to check it is to redo the calculation.
-        // Maybe just make sure it makes sense. 
-
-    }
-
-    function test_003____getPrice_______________________ReturnsTheDefaultPriceIfNoPriceIsAvailable() public {
-
-        bytes32 node = registerAndWrap(account2);
-
-        // Switch to account2.
-        vm.stopPrank();
-        vm.startPrank(account2);
-
-        // Get the price of the renewal of a 4 character name, which there is no price for except the default.
-        (uint256 priceEth, uint256 priceUsd) = pricePerCharRenewalController.rentPrice(
-            "\x04wxyz\x03abc\x03eth\x00",
-            1 // one second
         );
 
         // Check to make sure the price is correct.
@@ -562,7 +541,7 @@ contract L2PricePerCharRenewalControllerTest is Test, GasHelpers {
     }
 
     // Set the price per charters to an empty array and make sure the getPrice value is 0.
-    function test_003____getPrice_______________________ReturnsZeroIfNoPriceIsAvailable() public {
+    function test_003____rentPrice______________________ReturnsZeroIfNoPriceIsAvailable() public {
 
         // Set the pricing for the renewal controller. 
         uint256[] memory charAmounts = new uint256[](0);
@@ -589,6 +568,26 @@ contract L2PricePerCharRenewalControllerTest is Test, GasHelpers {
 
         // @audit - We are not checking the Eth price, here, the only way to check it is to redo the calculation.
         // Maybe just make sure it makes sense. 
+
+    }
+
+    function test_004____setReferrerCut_________________SetsTheReferrerCut() public {
+
+        // Set the referrer cut to 10%.
+        pricePerCharRenewalController.setReferrerCut(10);
+
+        // Check to make sure the referrer cut is correct.
+        assertEq(pricePerCharRenewalController.referrerCut(), 10);
+
+    }
+
+    function test_004____setReferrerCut_________________RevertsIfTheCutIsMoreThan50Percent() public {
+
+        // Make sure it reverts if the cut is more than 50%.
+        vm.expectRevert( abi.encodeWithSelector(InvalidReferrerCut.selector, 5100));
+
+        // Set the referrer cut to 51%.
+        pricePerCharRenewalController.setReferrerCut(5100);
 
     }
 

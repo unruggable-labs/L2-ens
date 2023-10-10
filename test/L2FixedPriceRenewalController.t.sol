@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import {L2SubnameRegistrar} from "optimism/wrapper/L2SubnameRegistrar.sol";
-import {ISubnameRegistrar} from "optimism/wrapper/interfaces/ISubnameRegistrar.sol";
+import {IL2SubnameRegistrar} from "optimism/wrapper/interfaces/IL2SubnameRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
@@ -21,7 +21,7 @@ import {IERC165} from "openzeppelin-contracts/contracts/utils/introspection/IERC
 import {IAddrResolver} from "ens-contracts/resolvers/profiles/IAddrResolver.sol";
 
 import {L2FixedPriceRenewalController} from "optimism/wrapper/renewalControllers/L2FixedPriceRenewalController.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {IL2RenewalController} from "optimism/wrapper/interfaces/IL2RenewalController.sol";
 import {IFixedPriceRenewalController} from "optimism/wrapper/interfaces/rCInterfaces/IFixedPriceRenewalController.sol";
 import {UnauthorizedAddress, InsufficientValue} from "optimism/wrapper/L2RenewalControllerBase.sol";
 import {IL2NameWrapperUpgrade} from "optimism/wrapper/interfaces/IL2NameWrapperUpgrade.sol";
@@ -54,7 +54,7 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
     address hacker = 0x0000000000000000000000000000000000001101; 
 
     // Set a dummy address for the renewal controller.
-    IRenewalController renewalController = IRenewalController(address(0x0000000000000000000000000000000000000007));
+    IL2RenewalController renewalController = IL2RenewalController(address(0x0000000000000000000000000000000000000007));
 
     // Set a dummy address for the custom resolver.
     address customResolver = 0x0000000000000000000000000000000000000007;
@@ -167,6 +167,11 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
             usdOracle,
             158548959918 // (≈$5/year) calculated as $/sec with 18 decimals.
         );
+
+        
+        // Set the referrer cut to 1%.
+        fixedPriceRenewalController.setReferrerCut(100);
+
     }
 
     function registerAndWrap(address _account) internal returns (bytes32){
@@ -181,7 +186,7 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
         subnameRegistrar.setParams(
             parentNode, 
             true, 
-            IRenewalController(address(fixedPriceRenewalController)), 
+            IL2RenewalController(address(fixedPriceRenewalController)), 
             3600, 
             type(uint64).max,
             3, // min chars
@@ -245,7 +250,7 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
     function test_001____supportsInterface___________SupportsCorrectInterfaces() public {
 
         // Check for the ISubnameWrapper interface.  
-        assertEq(fixedPriceRenewalController.supportsInterface(type(IRenewalController).interfaceId), true);
+        assertEq(fixedPriceRenewalController.supportsInterface(type(IL2RenewalController).interfaceId), true);
 
         // Check for the IERC165 interface.
         assertEq(fixedPriceRenewalController.supportsInterface(type(IERC165).interfaceId), true);

@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ~0.8.17;
+pragma solidity ^0.8.17;
 
 import {ERC1155Fuse, IERC1155MetadataURI} from "ens-contracts/wrapper/ERC1155Fuse.sol";
 import {Controllable} from "ens-contracts/wrapper/Controllable.sol";
@@ -509,7 +509,7 @@ contract L2NameWrapper is
              * renewal controllers. Previously it was only possible to allow for parent level renewal
              * controllers. Subname level renewal controllers are more flexible, allowing a different 
              * renewal controller to be used for each subname. Another significan advantage is that
-             * it is not necessary to buren CANNOT_APPROVE on the parent level name, and instead
+             * it is not necessary to burn CANNOT_APPROVE on the parent level name, and instead
              * CANNOT_APPROVE can be burned on the subname level name. This is important because 
              * burning a permanent fuse on the parent level name cannot be undone, and is likely to
              * reduce the utility and value of the parent level name, as well as potentially lock the

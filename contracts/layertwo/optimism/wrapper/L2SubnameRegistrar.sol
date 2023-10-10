@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
-import {ISubnameRegistrar} from "optimism/wrapper/interfaces/ISubnameRegistrar.sol";
+import {IL2SubnameRegistrar} from "optimism/wrapper/interfaces/IL2SubnameRegistrar.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
@@ -13,7 +13,7 @@ import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
 import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
 import {Balances} from "optimism/wrapper/Balances.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {IL2RenewalController} from "optimism/wrapper/interfaces/IL2RenewalController.sol";
 
 //import foundry console logging.
 import "forge-std/console.sol";
@@ -39,7 +39,7 @@ error InvalidAddress(address addr);
  */
 contract L2SubnameRegistrar is
     Ownable,
-    ISubnameRegistrar,
+    IL2SubnameRegistrar,
     ERC165,
     ERC20Recoverable,
     Balances
@@ -66,7 +66,7 @@ contract L2SubnameRegistrar is
     // This allows for different pricing for different lengths names. 
     struct Pricing {
         bool offerSubnames; 
-        IRenewalController renewalController;
+        IL2RenewalController renewalController;
         uint64 minRegistrationDuration;
         uint64 maxRegistrationDuration;
         uint16 minChars;
@@ -232,7 +232,7 @@ contract L2SubnameRegistrar is
      function setParams(
         bytes32 parentNode,
         bool _offerSubnames,
-        IRenewalController _renewalController,
+        IL2RenewalController _renewalController,
         uint64 _minRegistrationDuration, 
         uint64 _maxRegistrationDuration,
         uint16 _minChars,
@@ -648,7 +648,7 @@ contract L2SubnameRegistrar is
         returns (bool)
     {
         return
-            interfaceId == type(ISubnameRegistrar).interfaceId ||
+            interfaceId == type(IL2SubnameRegistrar).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 

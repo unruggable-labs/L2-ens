@@ -11,7 +11,7 @@ import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {IL2RenewalController} from "optimism/wrapper/interfaces/IL2RenewalController.sol";
 
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 import {IERC1155MetadataURI} from "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
@@ -67,7 +67,7 @@ contract L2NameWrapperTest is Test, GasHelpers {
     address hacker = 0x0000000000000000000000000000000000001101; 
 
     // Set a dummy address for the renewal controller.
-    IRenewalController renewalController = IRenewalController(address(0x0000000000000000000000000000000000000007));
+    IL2RenewalController renewalController = IL2RenewalController(address(0x0000000000000000000000000000000000000007));
 
     // Set a dummy address for the custom resolver.
     address customResolver = 0x0000000000000000000000000000000000000007;

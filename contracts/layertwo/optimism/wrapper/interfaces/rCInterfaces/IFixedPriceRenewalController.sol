@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "optimism/wrapper/interfaces/IRenewalController.sol";
+import "optimism/wrapper/interfaces/IL2RenewalController.sol";
 import "optimism/wrapper/interfaces/IAggregatorInterface.sol";
 
 /** 
@@ -10,7 +10,7 @@ import "optimism/wrapper/interfaces/IAggregatorInterface.sol";
  *  @notice Allows the setting of a USD denominated renewal price and an Oracle for converting to Wei
  */ 
  
-interface IFixedPriceRenewalController is IRenewalController {
+interface IFixedPriceRenewalController is IL2RenewalController {
 
     function setUSDPrice(uint256 _usdPrice) external;
 

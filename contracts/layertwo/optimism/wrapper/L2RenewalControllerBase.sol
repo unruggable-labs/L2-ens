@@ -7,7 +7,7 @@ import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
 import {Balances} from "optimism/wrapper/Balances.sol";
 import {BytesUtilsSub} from "./BytesUtilsSub.sol";
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {IL2RenewalController} from "optimism/wrapper/interfaces/IL2RenewalController.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
@@ -17,7 +17,7 @@ error UnauthorizedAddress(bytes32 node);
 error InvalidReferrerCut(uint256 referrerCut);
 
 abstract contract L2RenewalControllerBase is 
-    IRenewalController,
+    IL2RenewalController,
     ERC165,
     Ownable,
     Balances,
@@ -227,7 +227,7 @@ abstract contract L2RenewalControllerBase is
         returns (bool)
     {
         return
-            interfaceId == type(IRenewalController).interfaceId ||
+            interfaceId == type(IL2RenewalController).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 

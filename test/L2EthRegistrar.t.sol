@@ -13,7 +13,8 @@ import {
     LabelTooLong,
     CommitmentTooNew,
     CommitmentTooOld,
-    DurationTooShort
+    DurationTooShort,
+    InvalidReferrerCut
 
 } from "optimism/wrapper/L2EthRegistrar.sol";
 import {IL2EthRegistrar} from "optimism/wrapper/interfaces/IL2EthRegistrar.sol";
@@ -27,7 +28,7 @@ import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
 import {USDOracleMock} from "optimism/wrapper/mocks/USDOracleMock.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {IL2RenewalController} from "optimism/wrapper/interfaces/IL2RenewalController.sol";
 
 import {IERC1155MetadataURI} from "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
 import {GasHelpers} from "./GasHelpers.sol";
@@ -56,7 +57,7 @@ contract L2EthRegistrarTest is Test, GasHelpers {
     address accountReferrer = 0x0000000000000000000000000000000000005627;
 
     // Set a dummy address for the renewal controller.
-    IRenewalController renewalController = IRenewalController(address(0x0000000000000000000000000000000000000007));
+    IL2RenewalController renewalController = IL2RenewalController(address(0x0000000000000000000000000000000000000007));
 
     // Set a dummy address for the custom resolver.
     address customResolver = 0x0000000000000000000000000000000000000007;
@@ -174,6 +175,7 @@ contract L2EthRegistrarTest is Test, GasHelpers {
         return bytes("\x03abc\x03eth\x00").namehash(0);
 
     }
+
     // Create a Subheading using an empty function.
     function test1000_________________________________________________________________________() public {}
     function test2000__________________________L2_ETH_REGISTRAR_FUNCTIONS_____________________() public {}
@@ -249,6 +251,22 @@ contract L2EthRegistrarTest is Test, GasHelpers {
         assertEq(ethRegistrar.minChars(), 2);
         assertEq(ethRegistrar.maxChars(), 254);
         assertEq(ethRegistrar.referrerCut(), 100);
+    }
+
+    function test_005____setParams___________________RevertIfTheReferrerCutIsSetTooHigh() public{
+
+
+        // Revert with InvalidReferrerCut(_referrerCut) if the referrer cut is set too high.
+        vm.expectRevert(abi.encodeWithSelector(InvalidReferrerCut.selector, 6000));
+
+        ethRegistrar.setParams(
+            3601, 
+            type(uint64).max,
+            2, 
+            254,
+            6000 
+        );
+
     }
 
     function test_006____setPricingForAllLengths_____SetThePriceForAllLengthsOfNamesAtOneTime() public{
@@ -870,6 +888,9 @@ contract L2EthRegistrarTest is Test, GasHelpers {
     function test_018____renew_______________________RenewADotEth2LD() public{
 
         bytes32 node = registerAndWrap(account2);
+
+        // Check to make sure the eth registrar cut is set to 1%.
+        assertEq(ethRegistrar.referrerCut(), 100);
 
         //get the previous expiry. 
         (,, uint64 prevExpiry) = nameWrapper.getData(uint256(node));

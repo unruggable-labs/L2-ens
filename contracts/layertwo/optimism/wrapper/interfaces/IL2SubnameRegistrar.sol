@@ -1,14 +1,14 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {IRenewalController} from "./IRenewalController.sol";
+import {IL2RenewalController} from "./IL2RenewalController.sol";
 
 /**
  * @title Interface for a registrar for registering subnames.
  * @author Unruggable Labs
  */
 
-interface ISubnameRegistrar {
+interface IL2SubnameRegistrar {
 
     event SubnameRegistered(
         bytes name,
@@ -35,7 +35,7 @@ interface ISubnameRegistrar {
     function setParams(
         bytes32 parentNode,
         bool _offerSubnames,
-        IRenewalController _renewalController,
+        IL2RenewalController _renewalController,
         uint64 _minRegistrationDuration,
         uint64 _maxRegistrationDuration,
         uint16 _minChars,

@@ -17,7 +17,7 @@ import {
         CommitmentTooOld
         
         } from "optimism/wrapper/L2SubnameRegistrar.sol";
-import {ISubnameRegistrar} from "optimism/wrapper/interfaces/ISubnameRegistrar.sol";
+import {IL2SubnameRegistrar} from "optimism/wrapper/interfaces/IL2SubnameRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
@@ -28,7 +28,7 @@ import {IMetadataService} from "ens-contracts/wrapper/IMetadataService.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
 import {USDOracleMock} from "optimism/wrapper/mocks/USDOracleMock.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {IL2RenewalController} from "optimism/wrapper/interfaces/IL2RenewalController.sol";
 
 import {IERC1155MetadataURI} from "openzeppelin-contracts/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
 import {GasHelpers} from "./GasHelpers.sol";
@@ -62,7 +62,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
     address trustedEthAddress = 0x0000000000000000000000000000000000009568;
 
     // Set a dummy address for the renewal controller.
-    IRenewalController renewalController = IRenewalController(address(0x0000000000000000000000000000000000000007));
+    IL2RenewalController renewalController = IL2RenewalController(address(0x0000000000000000000000000000000000000007));
 
     // Set a dummy address for the custom resolver.
     address customResolver = 0x0000000000000000000000000000000000000007;
@@ -180,7 +180,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         subnameRegistrar.setParams(
             parentNode, 
             true, 
-            IRenewalController(address(subnameRegistrar)), 
+            IL2RenewalController(address(subnameRegistrar)), 
             3600, 
             type(uint64).max,
             3, // min chars

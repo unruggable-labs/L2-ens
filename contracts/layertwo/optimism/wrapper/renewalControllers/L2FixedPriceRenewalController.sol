@@ -5,7 +5,7 @@ import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
 import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
 import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {IL2RenewalController} from "optimism/wrapper/interfaces/IL2RenewalController.sol";
 import {IFixedPriceRenewalController} from "optimism/wrapper/interfaces/rCInterfaces/IFixedPriceRenewalController.sol";
 import {L2RenewalControllerBase} from "optimism/wrapper/L2RenewalControllerBase.sol";
 
@@ -66,7 +66,7 @@ contract L2FixedPriceRenewalController is
     function rentPrice(bytes calldata, uint256 duration)
         public
         view
-        override (IRenewalController, L2RenewalControllerBase)
+        override (IL2RenewalController, L2RenewalControllerBase)
         returns (uint256, uint256)
     {
 
@@ -87,7 +87,7 @@ contract L2FixedPriceRenewalController is
     {
         return
             interfaceId == type(IFixedPriceRenewalController).interfaceId ||
-            interfaceId == type(IRenewalController).interfaceId ||
+            interfaceId == type(IL2RenewalController).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 

@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-interface IRenewalController {
+interface IL2RenewalController {
 
     event NameRenewed(
         bytes indexed name,

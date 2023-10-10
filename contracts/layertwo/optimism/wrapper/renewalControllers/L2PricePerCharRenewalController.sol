@@ -5,7 +5,7 @@ import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
 import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
 import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {IL2RenewalController} from "optimism/wrapper/interfaces/IL2RenewalController.sol";
 import {IPricePerCharRenewalController} from "optimism/wrapper/interfaces/rCInterfaces/IPricePerCharRenewalController.sol";
 import {L2RenewalControllerBase} from "optimism/wrapper/L2RenewalControllerBase.sol";
 
@@ -114,7 +114,7 @@ contract L2PricePerCharRenewalController is
     function rentPrice(bytes calldata name, uint256 duration)
         public
         view
-        override (IRenewalController, L2RenewalControllerBase)
+        override (IL2RenewalController, L2RenewalControllerBase)
         returns (uint256, uint256)
     {
 
@@ -127,12 +127,14 @@ contract L2PricePerCharRenewalController is
         uint256 unitPrice;
         
         if (charAmountsLength > 0) {
-            // Check to make sure the price for labelLength exists.
-            // If not use the default price charAmounts[0].
+            // Check to make sure the price for labelLength exists. If not use the default price charAmounts[0].
             if(labelLength < charAmountsLength){
 
-                // Get the unit price, i.e. the price in USD/sec, for the length of
-                // the label. If there is not a price set then use the defualt amount.  
+                /**
+                 * Get the unit price, i.e. the price in USD/sec, for the length of
+                 * the label. If there is not a price set then use the defualt amount.  
+                 */
+
                 unitPrice = charAmounts[labelLength];
 
                 // If the unit price is 0 then use the default amount.
@@ -170,7 +172,7 @@ contract L2PricePerCharRenewalController is
     {
         return
             interfaceId == type(IPricePerCharRenewalController).interfaceId ||
-            interfaceId == type(IRenewalController).interfaceId ||
+            interfaceId == type(IL2RenewalController).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
