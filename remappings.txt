@@ -5,5 +5,6 @@ xap-contracts/=lib/xap/contracts/
 ens-contracts/=lib/ens-contracts/contracts/
 @openzeppelin/=lib/openzeppelin-contracts/
 @ensdomains/buffer/=lib/buffer/
+ensgateway/=lib/ensgateway/
 unruggable-protocol/=lib/unruggable-protocol/
 optimism/=contracts/layertwo/optimism/
