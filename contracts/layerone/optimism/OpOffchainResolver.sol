@@ -8,7 +8,6 @@ import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC16
 import {EVMFetchTarget} from "evmgateway/evm-verifier/contracts/EVMFetchTarget.sol";
 import {EVMFetcher} from "evmgateway/evm-verifier/contracts/EVMFetcher.sol";
 import {IEVMVerifier} from "evmgateway/evm-verifier/contracts/IEVMVerifier.sol";
-import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";
 
 // This is only used to create a function selector. 
@@ -27,19 +26,16 @@ contract OpOffchainResolver is IExtendedResolver, EVMFetchTarget, ERC165 {
     IEVMVerifier public opVerifier;
     ENS public ens;
     address public l2resolver;
-    Resolver public l1PublicResolver;
 
 
     constructor(
         IEVMVerifier _evmVerifier, 
         ENS _ens, 
-        address _l2Resolver, 
-        Resolver _l1PublicResolver
+        address _l2Resolver 
     ) {
         opVerifier = _evmVerifier;
         ens = _ens;
         l2resolver = _l2Resolver;
-        l1PublicResolver = _l1PublicResolver;
     }
 
     /**
