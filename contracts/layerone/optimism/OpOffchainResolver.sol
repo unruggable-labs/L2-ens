@@ -61,12 +61,12 @@ contract OpOffchainResolver is IExtendedResolver, EVMFetchTarget, ERC165 {
     
        // Do we want to replace the 2LD here to ID.unruggable? 
         
-       uint256 node = uint256(name.namehash(0));
+       bytes32 node = name.namehash(0);
        resolveAddress(node, 60); 
 
     }
 
-    function resolveAddress(uint256 node, uint256 coinType) private view {
+    function resolveAddress(bytes32 node, uint256 coinType) private view {
 
         EVMFetcher.newFetchRequest(opVerifier, l2resolver)
             .getDynamic(0) // This is the base slot of the version number of the public resolver contract.
