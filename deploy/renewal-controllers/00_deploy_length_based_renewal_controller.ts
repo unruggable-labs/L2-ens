@@ -54,6 +54,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 
 func.tags         = ['renewal-controllers']
-func.dependencies = ['registrars']
+func.dependencies = [/*'registrars'*/]
 
 export default func

@@ -37,7 +37,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log:  true,
     })
 
-    //if (deployTx.newlyDeployed) {
+    if (deployTx.newlyDeployed) {
 
         const ethRegistrar = await ethers.getContract('L2EthRegistrar');
 
@@ -59,7 +59,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log(
           `Adding L2EthRegistrar as a controller of L2NameWrapper (tx: ${addControllerTx.hash})...`,
         )
-    //}
+    }
 }
 
 func.tags         = ['registrars']

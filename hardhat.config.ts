@@ -1,5 +1,6 @@
 //import '@nomiclabs/hardhat-ethers'
 import "hardhat-deploy-ethers";
+import '@typechain/hardhat'
 import "@nomicfoundation/hardhat-foundry";
 import "@nomicfoundation/hardhat-verify";
 import 'hardhat-deploy'
@@ -117,5 +118,9 @@ module.exports = {
     apiKey: {
       goerli: 'G3CDT3CR9Y8HZWEW4HQPU4SJZRCEVB6GZN',
     },
+  },
+  typechain: {
+      outDir: "typechain",
+      target: "ethers-v5",
   },
 };
