@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
-import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 abstract contract Balances is Ownable {
 

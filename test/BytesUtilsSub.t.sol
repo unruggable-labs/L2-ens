@@ -141,4 +141,19 @@ contract BytesUtilsSubTests is Test {
 
     }
 
+
+    function test_009____replaceLabel___________________ReplaceEthWithUnruggable() public {
+
+        bytes memory name = "\x04test\x08testccip\x03eth\x00"; //9
+        bytes memory newTld = "\x0aunruggable\x00"; //12
+
+        bytes memory expectedName = "\x04test\x08testccip\x0aunruggable\x00"; //16
+
+        // make the offset exceed the length of the name
+        string memory replacedName = BytesUtilsSub.replaceTLD(name, newTld);
+
+        assertEq(replacedName, string(expectedName));
+
+    }
+
 }

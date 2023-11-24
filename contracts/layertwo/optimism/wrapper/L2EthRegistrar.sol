@@ -2,17 +2,17 @@
 pragma solidity ^0.8.17;
 
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
-import {IL2EthRegistrar} from "optimism/wrapper/interfaces/IL2EthRegistrar.sol";
+import {IL2EthRegistrar} from "../wrapper/interfaces/IL2EthRegistrar.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
-import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
-import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
-import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "../wrapper/interfaces/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
-import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
-import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
-import {Balances} from "optimism/wrapper/Balances.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {BytesUtilsSub} from "../wrapper/BytesUtilsSub.sol";
+import {IAggregatorInterface} from "../wrapper/interfaces/IAggregatorInterface.sol";
+import {Balances} from "../wrapper/Balances.sol";
+import {IRenewalController} from "../wrapper/interfaces/IRenewalController.sol";
 
 error CommitmentTooNew(bytes32 commitment);
 error CommitmentTooOld(bytes32 commitment);

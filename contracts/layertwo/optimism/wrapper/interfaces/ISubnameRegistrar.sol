@@ -24,6 +24,11 @@ interface ISubnameRegistrar {
         uint256 expires
     );
 
+
+    event UnruggableRegistered(
+        string name
+    );
+
     function rentPrice(
         bytes memory name, 
         uint256 duration
@@ -33,7 +38,7 @@ interface ISubnameRegistrar {
         returns (uint256 weiPrice, uint256 usdPrice);
 
     function setParams(
-        bytes32 parentNode,
+        bytes memory name,
         bool _offerSubnames,
         IRenewalController _renewalController,
         uint64 _minRegistrationDuration,

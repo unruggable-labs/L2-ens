@@ -7,6 +7,13 @@ export const hexEncodeName = (name) => {
     return '0x' + packet.name.encode(name).toString('hex')
 }
 
+const FUSES = {
+  CANNOT_BURN_NAME:      1,
+  PARENT_CANNOT_CONTROL: 2 ** 16,
+}
+
+const UNRUGGABLE_LABELHASH = "0x0fb49d3befd591078ec044334b6cad68f02609749d39e161fa1ff9bf6ce96d8c";
+
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const { getNamedAccounts, deployments } = hre
@@ -17,7 +24,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const l2NameWrapper = await get('L2NameWrapper');
 
     //Other Contracts
-    const registryAddress             = "0xffED83BDBd2F9906Ac12467288946cf7d8F6f599";
+    const ensRegistry    = await get('ENSRegistry');
+
     const usdOracle      = await get('USDOracleMock');
 
     const minCommitmentAge = 5; //5 seconds
@@ -26,7 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     let deployArguments = [
         minCommitmentAge,
         maxCommitmentAge,
-        registryAddress,
+        ensRegistry.address,
         l2NameWrapper.address,
         usdOracle.address,
     ];
@@ -37,22 +45,58 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log:  true,
     })
 
-    if (deployTx.newlyDeployed) {
+    //if (deployTx.newlyDeployed) {
+
+        console.log(`Deployed L2SubnameRegistrar to ${deployTx.address}`);
 
         const nameWrapper = await ethers.getContract('L2NameWrapper')
-
+        const root        = await ethers.getContract('Root')
+/*
         const addControllerTx = await nameWrapper.setController(deployTx.address, true)
         console.log(
             `Adding L2SubnameRegistrar as a controller of L2NameWrapper (tx: ${addControllerTx.hash})...`,
         )
-
-        console.log(`Deployed L2SubnameRegistrar to ${deployTx.address}`);
-
+*/
         const l2SubnameRegistrar = await ethers.getContractAt(
             'L2SubnameRegistrar',
             deployTx.address,
         )
 
+        const setUnruggableOwnerTx = await root.setSubnodeOwner(
+            UNRUGGABLE_LABELHASH, 
+            deployer
+        ).then((response) => {
+
+            console.log(
+              `Set owner of .unruggable TLD in root (tx: ${response.hash})...`,
+            )
+        });
+
+        console.log("Deployer address:", deployer);
+
+        const wrapUnruggableTx = await nameWrapper.wrapTLD(
+            hexEncodeName("unruggable"), 
+            deployer,//l2SubnameRegistrar.address,
+            FUSES.PARENT_CANNOT_CONTROL | FUSES.CANNOT_BURN_NAME, //uint16 _minChars, 28 days
+            13590337622 //year 2400
+        ).then((response) => {
+
+            console.log(
+              `Wrapping .unruggable TLD (tx: ${response.hash})...`,
+            )
+
+        }).catch((error) => {console.log('error', error);});
+
+
+        const disableAllowListTx = await l2SubnameRegistrar.disableAllowList(
+        ).then((response) => {
+
+            console.log(
+              `Disabled Allow List (tx: ${response.hash})...`,
+            )
+
+        }).catch((error) => {console.log('error disabling allow list', error);});
+/*
         console.log("HERE 1");
 
         if (network.name == "goerli" || network.name == "optimism-goerli") {
@@ -65,7 +109,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         }
 
         console.log("HERE 3");
-    }
+        */
+    //}
 }
 
 func.tags         = ['registrars']

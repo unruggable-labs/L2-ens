@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "optimism/wrapper/interfaces/IRenewalController.sol";
+import "../IRenewalController.sol";
 
 /** 
  * @title An interface for a renewal controller offering renewals at different prices depending on the length of the name in question

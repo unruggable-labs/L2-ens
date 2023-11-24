@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
+import {IAggregatorInterface} from "../interfaces/IAggregatorInterface.sol";
 
 contract USDOracleMock is IAggregatorInterface{
 

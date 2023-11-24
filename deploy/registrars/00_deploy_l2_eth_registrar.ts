@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const l2NameWrapper = await get('L2NameWrapper');
 
     //Other Contracts
-    const registryAddress             = "0xffED83BDBd2F9906Ac12467288946cf7d8F6f599";
+    const ensRegistry    = await get('ENSRegistry');
     const usdOracle      = await get('USDOracleMock');
 
     const minCommitmentAge = 5; //5 seconds
@@ -26,7 +26,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     let deployArguments = [
         minCommitmentAge,
         maxCommitmentAge,
-        registryAddress,
+        ensRegistry.address,
         l2NameWrapper.address,
         usdOracle.address,
     ];
@@ -37,7 +37,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log:  true,
     })
 
-    //if (deployTx.newlyDeployed) {
+    if (deployTx.newlyDeployed) {
 
         const ethRegistrar = await ethers.getContract('L2EthRegistrar');
 
@@ -59,7 +59,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log(
           `Adding L2EthRegistrar as a controller of L2NameWrapper (tx: ${addControllerTx.hash})...`,
         )
-    //}
+    }
 }
 
 func.tags         = ['registrars']

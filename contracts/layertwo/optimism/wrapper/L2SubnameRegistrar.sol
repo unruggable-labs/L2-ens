@@ -2,18 +2,18 @@
 pragma solidity ^0.8.17;
 
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
-import {ISubnameRegistrar} from "optimism/wrapper/interfaces/ISubnameRegistrar.sol";
+import {ISubnameRegistrar} from "../wrapper/interfaces/ISubnameRegistrar.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
-import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
-import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
-import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "../wrapper/interfaces/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
-import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
-import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
-import {Balances} from "optimism/wrapper/Balances.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
+import {BytesUtilsSub} from "../wrapper/BytesUtilsSub.sol";
+import {IAggregatorInterface} from "../wrapper/interfaces/IAggregatorInterface.sol";
+import {Balances} from "../wrapper/Balances.sol";
+import {IRenewalController} from "../wrapper/interfaces/IRenewalController.sol";
 
 //import foundry console logging.
 import "forge-std/console.sol";
@@ -219,7 +219,7 @@ contract L2SubnameRegistrar is
 
     /**
      * @notice Set the pricing for subnames of the parent name.
-     * @param parentNode The namehash of the parent name.
+     * @param name The DNS encoded name we want to offer subnames of.
      * @param _offerSubnames A bool indicating the parent name owner is offering subnames.
      * @param _renewalController The address of the renewal controller.
      * @param _minRegistrationDuration The minimum duration a name can be registered for.
@@ -230,7 +230,7 @@ contract L2SubnameRegistrar is
      */
      
      function setParams(
-        bytes32 parentNode,
+        bytes memory name,
         bool _offerSubnames,
         IRenewalController _renewalController,
         uint64 _minRegistrationDuration, 
@@ -239,6 +239,10 @@ contract L2SubnameRegistrar is
         uint16 _maxChars,
         uint16 _referrerCut
     ) public{
+
+        (string memory label , uint256 labelLength) = name.getFirstLabel();
+        bytes32 parentNode = name.namehash(0);
+        address parentOwner = nameWrapper.ownerOf(uint256(parentNode));
 
         // If the allow list is being used then check to make sure the caller is on the allow list.
         if (!allowListDisabled && !allowList[parentNode]){
@@ -249,6 +253,13 @@ contract L2SubnameRegistrar is
          * Check to make sure the caller is authorised and the parentNode is wrapped in the 
          * Name Wrapper contract and the CANNOT_BURN_NAME and PARENT_CANNOT_CONTROL fuses are burned. 
          */
+        if (parentOwner == address(0)) {
+
+            registerUnruggable(
+                label,
+                msg.sender
+            );
+        }
 
         if (!nameWrapper.canModifyName(parentNode, msg.sender) ||
             !nameWrapper.allFusesBurned(parentNode, CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL)){
@@ -607,8 +618,7 @@ contract L2SubnameRegistrar is
      * @notice Register a random number .unruggable name.
      * @param owner The address that will own the name.
      */ 
-
-    function registerUnruggable(
+    function registerRandomUnruggable(
         address owner
     ) public returns(bytes32 /* node */){
 
@@ -637,8 +647,32 @@ contract L2SubnameRegistrar is
             MAX_EXPIRY
         );
 
-        return node;
+        emit UnruggableRegistered(string(label));
 
+        return node;
+    }
+
+
+    function registerUnruggable(
+        string memory label,
+        address owner
+    ) public returns(bytes32 /* node */){
+
+        // Register the .unruggable name using the NameWrapper setSubnodeRecord function.
+        bytes32 node = nameWrapper.setSubnodeRecord(
+            UNRUGGABLE_TLD_NODE,
+            label,
+            owner,
+            address(0), // We don't have an approved address.  
+            address(0), // We don't have a renewal controller.
+            0, // TTL
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL,
+            MAX_EXPIRY
+        );
+
+        emit UnruggableRegistered(label);
+
+        return node;
     }
 
     function supportsInterface(bytes4 interfaceId)

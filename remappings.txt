@@ -1,9 +1,10 @@
 ds-test/=lib/forge-std/lib/ds-test/src/
 forge-std/=lib/forge-std/src/
 openzeppelin-contracts/=lib/openzeppelin-contracts/
+@openzeppelin/=lib/openzeppelin-contracts/
 xap-contracts/=lib/xap/contracts/
 ens-contracts/=lib/ens-contracts/contracts/
-@openzeppelin/=lib/openzeppelin-contracts/
 @ensdomains/buffer/=lib/buffer/
 unruggable-protocol/=lib/unruggable-protocol/
+evmgateway/=lib/evmgateway/
 optimism/=contracts/layertwo/optimism/
