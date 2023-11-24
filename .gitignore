@@ -13,3 +13,7 @@ broadcast/
 temp/
 .secret
 lcov.info
+typechain/
+deployments/
+cache_hardhat/
+package.lock

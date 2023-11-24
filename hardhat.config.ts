@@ -3,7 +3,10 @@ import "hardhat-deploy-ethers";
 import '@typechain/hardhat'
 import "@nomicfoundation/hardhat-foundry";
 import "@nomicfoundation/hardhat-verify";
+import "hardhat-storage-layout";
 import 'hardhat-deploy'
+import "hardhat-insight";
+import "hardhat-contract-dumper";
 
 import dotenv from 'dotenv'
 
@@ -67,6 +70,18 @@ module.exports = {
       tags: ['test', 'legacy', 'use_root'],
       chainId: 5,
       accounts: real_accounts,
+      companionNetworks: {
+        l2: "ensChain",
+      },
+    },
+    sepolia: {
+      url: `https://eth-sepolia.g.alchemy.com/v2/wU2GqCbHRv7zR36dbSRH0sHKM72poxIE`,
+      tags: ['test', 'legacy', 'use_root'],
+      chainId: 11155111,
+      accounts: real_accounts,
+      companionNetworks: {
+        l2: "ensChain",
+      },
     },
     mainnet: {
       url: `https://eth-mainnet.g.alchemy.com/v2/qwzEYMR0sNAZdroXZO7KW-P08W4EMvWh`,
@@ -80,6 +95,14 @@ module.exports = {
       chainId: 420,
       accounts: real_accounts,
       gasPrice: 50000000000
+    },
+    ensChain: {
+      url: `https://chain.enstools.com`,
+      tags: ['use_root'],
+      chainId: 42069,
+      accounts: real_accounts,
+      gasPrice: 50000000000,
+      deploy: [ "deploy-ens-chain/" ],
     },
   },
   abiExporter: {
@@ -121,6 +144,6 @@ module.exports = {
   },
   typechain: {
       outDir: "typechain",
-      target: "ethers-v5",
+      target: "ethers-v6",
   },
 };
