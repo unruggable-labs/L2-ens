@@ -10,7 +10,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer }                               = await getNamedAccounts()
 
     //Other Contracts
-    const registryAddress             = "0xffED83BDBd2F9906Ac12467288946cf7d8F6f599";
+    const ensRegistry    = await get('ENSRegistry');
 
     //Just use the mainnet one for now for metadata
     const nameWrapperAddress          = "0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401";
@@ -31,7 +31,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     })
 
     let deployArguments = [
-        registryAddress,
+        ensRegistry.address,
         metadataTx.address
     ];
 

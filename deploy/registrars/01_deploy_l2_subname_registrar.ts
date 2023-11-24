@@ -25,6 +25,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     //Other Contracts
     const ensRegistry    = await get('ENSRegistry');
+
     const usdOracle      = await get('USDOracleMock');
 
     const minCommitmentAge = 5; //5 seconds
@@ -48,8 +49,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         console.log(`Deployed L2SubnameRegistrar to ${deployTx.address}`);
 
-        const root        = await ethers.getContract('Root')
         const nameWrapper = await ethers.getContract('L2NameWrapper')
+        const root        = await ethers.getContract('Root')
 /*
         const addControllerTx = await nameWrapper.setController(deployTx.address, true)
         console.log(
@@ -61,7 +62,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             deployTx.address,
         )
 
-
         const setUnruggableOwnerTx = await root.setSubnodeOwner(
             UNRUGGABLE_LABELHASH, 
             deployer
@@ -72,8 +72,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             )
         });
 
-
-        console.log(nameWrapper.address);
+        console.log("Deployer address:", deployer);
 
         const wrapUnruggableTx = await nameWrapper.wrapTLD(
             hexEncodeName("unruggable"), 
