@@ -1,16 +1,16 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
-import {IL2NameWrapperUpgrade} from "optimism/wrapper/interfaces/IL2NameWrapperUpgrade.sol";
+import {IL2NameWrapper} from "../wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapperUpgrade} from "../wrapper/interfaces/IL2NameWrapperUpgrade.sol";
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
-import {Balances} from "optimism/wrapper/Balances.sol";
+import {Balances} from "../wrapper/Balances.sol";
 import {BytesUtilsSub} from "./BytesUtilsSub.sol";
-import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IRenewalController} from "../wrapper/interfaces/IRenewalController.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
-import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 error InsufficientValue();
 error UnauthorizedAddress(bytes32 node);

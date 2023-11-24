@@ -1,13 +1,13 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper} from "../interfaces/IL2NameWrapper.sol";
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
-import {IAggregatorInterface} from "optimism/wrapper/interfaces/IAggregatorInterface.sol";
-import {BytesUtilsSub} from "optimism/wrapper/BytesUtilsSub.sol";
-import {IRenewalController} from "optimism/wrapper/interfaces/IRenewalController.sol";
-import {IFixedPriceRenewalController} from "optimism/wrapper/interfaces/rCInterfaces/IFixedPriceRenewalController.sol";
-import {L2RenewalControllerBase} from "optimism/wrapper/L2RenewalControllerBase.sol";
+import {IAggregatorInterface} from "../interfaces/IAggregatorInterface.sol";
+import {BytesUtilsSub} from "../BytesUtilsSub.sol";
+import {IRenewalController} from "../interfaces/IRenewalController.sol";
+import {IFixedPriceRenewalController} from "../interfaces/rCInterfaces/IFixedPriceRenewalController.sol";
+import {L2RenewalControllerBase} from "../L2RenewalControllerBase.sol";
 
 
 contract L2FixedPriceRenewalController is
