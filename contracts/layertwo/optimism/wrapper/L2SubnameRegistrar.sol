@@ -7,6 +7,7 @@ import {ENS} from "ens-contracts/registry/ENS.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IL2NameWrapper, CANNOT_BURN_NAME, PARENT_CANNOT_CONTROL, CAN_EXTEND_EXPIRY} from "../wrapper/interfaces/IL2NameWrapper.sol";
 import {ERC20Recoverable} from "ens-contracts/utils/ERC20Recoverable.sol";
 import {BytesUtilsSub} from "../wrapper/BytesUtilsSub.sol";
@@ -618,10 +619,7 @@ contract L2SubnameRegistrar is
      * @param owner The address that will own the name.
      */ 
     function registerRandomUnruggable(
-        address owner,
-        uint256 maxLoops,
-        uint8 numChars,
-        uint256 salt
+        address owner
     ) public returns(bytes32 /* node */){
 
         // Make sure the owner is not the zero address.

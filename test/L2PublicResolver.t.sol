@@ -170,15 +170,6 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function registerAndWrap(address _account) internal returns (bytes32){
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
-        (bytes32 labelhash, ) = bytes("\x03abc\x03eth\x00").readLabel(0);
-
-        // Add the parentNode to the allow list.
-        subnameRegistrar.allowName(bytes("\x03abc\x03eth\x00"), true);
-
-        // Set the registration parameters for subnames of the parent name.
-        subnameRegistrar.setParams(
-            parentNode, 
         bytes memory parentBytes = bytes("\x03abc\x03eth\x00");
         bytes32 parentNode = parentBytes.namehash(0);
         (bytes32 labelhash, ) = parentBytes.readLabel(0);
