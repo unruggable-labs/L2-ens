@@ -168,15 +168,16 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function registerAndWrap(address _account) internal returns (bytes32){
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
-        (bytes32 labelhash, ) = bytes("\x03abc\x03eth\x00").readLabel(0);
+        bytes memory parentBytes = bytes("\x03abc\x03eth\x00");
+        bytes32 parentNode = parentBytes.namehash(0);
+        (bytes32 labelhash, ) = parentBytes.readLabel(0);
 
         // Add the parentNode to the allow list.
-        subnameRegistrar.allowName(bytes("\x03abc\x03eth\x00"), true);
+        subnameRegistrar.allowName(parentBytes, true);
 
         // Set the registration parameters for subnames of the parent name.
         subnameRegistrar.setParams(
-            parentNode, 
+            parentBytes, 
             true, 
             IRenewalController(address(subnameRegistrar)), 
             3600, 
@@ -278,13 +279,14 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function test_003____allowName___________________ANameCanBeAddedAndRemovedFromTheAllowList() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes memory parentBytes = bytes("\x03abc\x03eth\x00");
+        bytes32 parentNode = parentBytes.namehash(0);
 
         // Expect to revert if the name is not allowed with a custom error UnauthorizedAddress
         vm.expectRevert( abi.encodeWithSelector(UnauthorizedAddress.selector, parentNode));
 
         subnameRegistrar.setParams(
-            parentNode, 
+            parentBytes, 
             false, 
             renewalController, 
             3601, 
@@ -294,12 +296,12 @@ contract SubnameRegistrarTest is Test, GasHelpers {
             100 // referrer cut of 1%
         );
 
-        subnameRegistrar.allowName(bytes("\x03abc\x03eth\x00"),true);
+        subnameRegistrar.allowName(parentBytes,true);
 
         assertEq(subnameRegistrar.allowList(parentNode), true);
 
         subnameRegistrar.setParams(
-            parentNode, 
+            parentBytes, 
             false, 
             renewalController, 
             3601, 
@@ -330,15 +332,16 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function test_004____disableAllowList____________AllowListCanBeDisabled() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes memory parentBytes = bytes("\x03abc\x03eth\x00");
+        bytes32 parentNode = parentBytes.namehash(0);
 
-        subnameRegistrar.allowName(bytes("\x03abc\x03eth\x00"), false);
+        subnameRegistrar.allowName(parentBytes, false);
 
         //expect to revert if the name is not allowed with a custom error UnauthorizedAddress
         vm.expectRevert( abi.encodeWithSelector(UnauthorizedAddress.selector, parentNode));
 
         subnameRegistrar.setParams(
-            parentNode, 
+            parentBytes, 
             false, 
             renewalController, 
             3601, 
@@ -351,7 +354,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         subnameRegistrar.disableAllowList();
 
         subnameRegistrar.setParams(
-            parentNode, 
+            parentBytes, 
             false, 
             renewalController, 
             3601, 
@@ -382,11 +385,13 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function test_005____setParams___________________SetTheRegistrationParametersForSubnames() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes memory parentBytes = bytes("\x03abc\x03eth\x00");
+        bytes32 parentNode = parentBytes.namehash(0);
+
         bytes32 node = registerAndWrap(account2);
 
         subnameRegistrar.setParams(
-            parentNode, 
+            parentBytes, 
             false, 
             renewalController, 
             3601, 
@@ -416,7 +421,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function test_005____setParams___________________RevertsWhenCallerIsNotTheOwner() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes memory parentBytes = bytes("\x03abc\x03eth\x00");
+        bytes32 parentNode = parentBytes.namehash(0);
         registerAndWrap(account);
 
         vm.stopPrank();
@@ -426,7 +432,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         vm.expectRevert( abi.encodeWithSelector(UnauthorizedAddress.selector, parentNode));
 
         subnameRegistrar.setParams(
-            parentNode, 
+            parentBytes, 
             false, 
             renewalController, 
             3601, 
@@ -842,7 +848,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function test_015____register____________________RegistringForTooShortOrLongFails() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes memory parentBytes = bytes("\x03abc\x03eth\x00");
+        bytes32 parentNode = parentBytes.namehash(0);
         bytes32 node = registerAndWrap(account2);
 
         assertEq(subnameRegistrar.available(bytes("\x03xyz\x03abc\x03eth\x00")), false);
@@ -850,7 +857,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         // Change the params duration to be one year minimum and one year maximum.
         subnameRegistrar.setParams(
-            parentNode, 
+            parentBytes, 
             true, 
             renewalController, 
             oneYear, 
@@ -927,12 +934,13 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function test_015____register____________________CannotRegisterSubnamesWhenNotOffered() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes memory parentBytes = bytes("\x03abc\x03eth\x00");
+        bytes32 parentNode = parentBytes.namehash(0);
         registerAndWrap(account2);
 
         // Disable offering of subnames.
         subnameRegistrar.setParams(
-            parentNode, 
+            parentBytes, 
             false, 
             IRenewalController(address(subnameRegistrar)), 
             3600, 
@@ -1047,12 +1055,14 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     function test_015____register____________________ExpiryIsTooLongSetToMaxExpiry() public{
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        bytes memory parentBytes = bytes("\x03abc\x03eth\x00");
+        bytes32 parentNode = parentBytes.namehash(0);
         registerAndWrap(account2);
 
         // Disable offering of subnames.
         subnameRegistrar.setParams(
-            parentNode, 
+            parentBytes, 
             true, 
             IRenewalController(address(subnameRegistrar)), 
             3600, 
@@ -1222,13 +1232,14 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         assertEq(nameWrapper.ownerOf(uint256(node)), account);
     }
 
-    function test_017____registerUnruggable__________FindingAvailableNameHappensOftenEnough() public{
+
+    function test_017____registerRandomUnruggable__________FindingAvailableNameHappensOftenEnough() public{
 
         // Add a revert counter.
         uint256 errorRevertCount = 0;
 
         /**
-         * Each iteration of the loop we call registerUnruggable, which attempts to find a "random" 
+         * Each iteration of the loop we call registerRandomUnruggable, which attempts to find a "random" 
          * number as a name. The first parameter is maxLoops which is the max number of times the function
          * will attempt to find an available name. The next parameter is the number of characters.
          * In this case we test for a limited name space of 00-99. 
@@ -1236,7 +1247,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         // try 100 times in a loop using try catch
         for (uint i = 0; i < 100; i++) {
-            try subnameRegistrar.registerUnruggable(account, 2, 2, i) returns (bytes32 node){
+            try subnameRegistrar.registerRandomUnruggable(account, 2, 2, i) returns (bytes32 node){
                 // Check to make sure the subname is owned by "account" in the L2NameWrapper.
                 assertEq(nameWrapper.ownerOf(uint256(node)), account);
             } catch Error(string memory reason) {
@@ -1263,23 +1274,23 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         assertTrue(errorRevertCount < 24);
     }
 
-    function test_018____registerUnruggable__________EdgeCasesAreHandled() public{
+    function test_018____registerRandomUnruggable__________EdgeCasesAreHandled() public{
 
         // Expect a revert if the number of characters is 0.
         vm.expectRevert( bytes("Number of characters must be greater than 0."));
 
         // Attempt to register a name with 0 characters.
-        bytes32 node = subnameRegistrar.registerUnruggable(account, 2, 0, 7);
+        bytes32 node = subnameRegistrar.registerRandomUnruggable(account, 2, 0, 7);
 
         /**
          * Expect a revert if the number of characters is over 255, because the max value of uint8 is 255.
-         * Call subnameRegistrar.registerUnruggable using a low level call function so we can try to 
+         * Call subnameRegistrar.registerRandomUnruggable using a low level call function so we can try to 
          * register a name with 256 characters.
          */
 
         (bool success, /*bytes memory returnData*/) = address(subnameRegistrar).call(
             abi.encodeWithSelector(
-                subnameRegistrar.registerUnruggable.selector,
+                subnameRegistrar.registerRandomUnruggable.selector,
                 account,
                 2, // The max number of loops.
                 256, // Number of characters. 
@@ -1292,6 +1303,6 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         // Expect revert if the number of loops is 0.
         vm.expectRevert(bytes("Max loops must be greater than 0."));
-        bytes32 node2 = subnameRegistrar.registerUnruggable(account, 0, 7, 7);
+        bytes32 node2 = subnameRegistrar.registerRandomUnruggable(account, 0, 7, 7);
     }
 }

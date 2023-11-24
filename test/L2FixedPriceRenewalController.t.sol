@@ -171,7 +171,8 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
 
     function registerAndWrap(address _account) internal returns (bytes32){
 
-        bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+        bytes memory parentBytes = bytes("\x03abc\x03eth\x00");
+        bytes32 parentNode = parentBytes.namehash(0);
         (bytes32 labelhash, ) = bytes("\x03abc\x03eth\x00").readLabel(0);
 
         // Add the parentNode to the allow list.
@@ -179,7 +180,7 @@ contract L2FixedPriceRenewalControllerTest is Test, GasHelpers {
 
         // Set the registration parameters for subnames of the parent name.
         subnameRegistrar.setParams(
-            parentNode, 
+            parentBytes, 
             true, 
             IRenewalController(address(fixedPriceRenewalController)), 
             3600, 

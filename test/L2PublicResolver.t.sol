@@ -179,6 +179,16 @@ contract SubnameRegistrarTest is Test, GasHelpers {
         // Set the registration parameters for subnames of the parent name.
         subnameRegistrar.setParams(
             parentNode, 
+        bytes memory parentBytes = bytes("\x03abc\x03eth\x00");
+        bytes32 parentNode = parentBytes.namehash(0);
+        (bytes32 labelhash, ) = parentBytes.readLabel(0);
+
+        // Add the parentNode to the allow list.
+        subnameRegistrar.allowName(parentBytes, true);
+
+        // Set the registration parameters for subnames of the parent name.
+        subnameRegistrar.setParams(
+            parentBytes, 
             true, 
             IRenewalController(address(subnameRegistrar)), 
             3600, 
@@ -499,8 +509,8 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
         // Check to make sure the public resolver has the correct address for the subname.
         assertEq(publicResolver.addr(coolNode), accountReferrer);
-
     }
+
 
     function test_014____setApprovalForAll___________RevertIfSettingApprovalForAllToSelf() public{
 
