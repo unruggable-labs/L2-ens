@@ -15,3 +15,6 @@
 [submodule "lib/evmgateway"]
 	path = lib/evmgateway
 	url = https://github.com/ensdomains/evmgateway
+[submodule "lib/optimism"]
+	path = lib/optimism
+	url = https://github.com/ethereum-optimism/optimism.git

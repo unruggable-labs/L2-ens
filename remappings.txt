@@ -7,4 +7,5 @@ ens-contracts/=lib/ens-contracts/contracts/
 @ensdomains/buffer/=lib/buffer/
 unruggable-protocol/=lib/unruggable-protocol/
 evmgateway/=lib/evmgateway/
+@eth-optimism/=lib/optimism/packages/
 optimism/=contracts/layertwo/optimism/

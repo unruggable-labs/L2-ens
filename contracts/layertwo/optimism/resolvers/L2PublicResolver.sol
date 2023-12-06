@@ -11,7 +11,7 @@ import "ens-contracts/resolvers/profiles/NameResolver.sol";
 import "ens-contracts/resolvers/profiles/PubkeyResolver.sol";
 import "ens-contracts/resolvers/profiles/TextResolver.sol";
 import "ens-contracts/resolvers/Multicallable.sol";
-import {IL2NameWrapper} from "optimism/wrapper/interfaces/IL2NameWrapper.sol";
+import {IL2NameWrapper} from "../wrapper/interfaces/IL2NameWrapper.sol";
 
 /**
  * A simple resolver anyone can use; only allows the owner of a node to set its

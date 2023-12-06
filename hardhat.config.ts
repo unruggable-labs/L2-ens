@@ -3,10 +3,10 @@ import "hardhat-deploy-ethers";
 import '@typechain/hardhat'
 import "@nomicfoundation/hardhat-foundry";
 import "@nomicfoundation/hardhat-verify";
-import "hardhat-storage-layout";
+//import "hardhat-storage-layout";
 import 'hardhat-deploy'
-import "hardhat-insight";
-import "hardhat-contract-dumper";
+//import "hardhat-insight";
+//import "hardhat-contract-dumper";
 
 import dotenv from 'dotenv'
 
@@ -75,7 +75,7 @@ module.exports = {
       },
     },
     sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/wU2GqCbHRv7zR36dbSRH0sHKM72poxIE`,
+      url: `https://eth-sepolia.g.alchemy.com/v2/GdE0VopSTDxRkcOsTMgd-cOkw_ruptWe`,
       tags: ['test', 'legacy', 'use_root'],
       chainId: 11155111,
       accounts: real_accounts,
@@ -99,7 +99,7 @@ module.exports = {
     ensChain: {
       url: `https://chain.enstools.com`,
       tags: ['use_root'],
-      chainId: 42069,
+      chainId: 42070,
       accounts: real_accounts,
       gasPrice: 50000000000,
       deploy: [ "deploy-ens-chain/" ],
