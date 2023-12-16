@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";
-import {ISubnameRegistrar} from "../wrapper/interfaces/ISubnameRegistrar.sol";
+import {IL2SubnameRegistrar} from "../wrapper/interfaces/IL2SubnameRegistrar.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
@@ -39,7 +39,7 @@ error InvalidAddress(address addr);
  */
 contract L2SubnameRegistrar is
     Ownable,
-    ISubnameRegistrar,
+    IL2SubnameRegistrar,
     ERC165,
     ERC20Recoverable,
     Balances
@@ -682,7 +682,7 @@ contract L2SubnameRegistrar is
         returns (bool)
     {
         return
-            interfaceId == type(ISubnameRegistrar).interfaceId ||
+            interfaceId == type(IL2SubnameRegistrar).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 

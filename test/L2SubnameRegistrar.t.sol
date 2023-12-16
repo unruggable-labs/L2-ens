@@ -17,7 +17,7 @@ import {
         CommitmentTooOld
         
         } from "optimism/wrapper/L2SubnameRegistrar.sol";
-import {ISubnameRegistrar} from "optimism/wrapper/interfaces/ISubnameRegistrar.sol";
+import {IL2SubnameRegistrar} from "optimism/wrapper/interfaces/IL2SubnameRegistrar.sol";
 import {L2NameWrapper} from "optimism/wrapper/L2NameWrapper.sol";
 import {ENSRegistry} from "ens-contracts/registry/ENSRegistry.sol";
 import {StaticMetadataService} from "ens-contracts/wrapper/StaticMetadataService.sol";
@@ -243,7 +243,7 @@ contract SubnameRegistrarTest is Test, GasHelpers {
     function test_001____supportsInterface___________SupportsCorrectInterfaces() public {
 
         // Check for the ISubnameWrapper interface.  
-        assertEq(subnameRegistrar.supportsInterface(type(ISubnameRegistrar).interfaceId), true);
+        assertEq(subnameRegistrar.supportsInterface(type(IL2SubnameRegistrar).interfaceId), true);
 
         // Check for the IERC165 interface.  
         assertEq(subnameRegistrar.supportsInterface(type(IERC165).interfaceId), true);
@@ -1224,11 +1224,11 @@ contract SubnameRegistrarTest is Test, GasHelpers {
 
     }
 
-   function test_016____registerRandomUnruggable__________RegisterADotUnruggableName() public{
+   function test_016____registerRandomUnruggable____RegisterADotUnruggableName() public{
 
        bytes32 node = subnameRegistrar.registerRandomUnruggable(account);
 
-       // Check to make sure the subname is owned account2 in the Name Wrapper.
-       assertEq(nameWrapper.ownerOf(uint256(node)), account);
-   }
+        // Check to make sure the subname is owned account2 in the Name Wrapper.
+        assertEq(nameWrapper.ownerOf(uint256(node)), account);
+    }
 }

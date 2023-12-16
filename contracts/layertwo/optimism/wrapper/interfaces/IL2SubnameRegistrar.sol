@@ -8,7 +8,7 @@ import {IRenewalController} from "./IRenewalController.sol";
  * @author Unruggable Labs
  */
 
-interface ISubnameRegistrar {
+interface IL2SubnameRegistrar {
 
     event SubnameRegistered(
         bytes name,
