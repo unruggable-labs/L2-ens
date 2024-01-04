@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ~0.8.17;
 
 contract BasicDemoL2 {
     uint256 public latest;                         // Slot 0

@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ~0.8.4;
 import {INameWrapperUpgrade} from "ens-contracts/wrapper/INameWrapperUpgrade.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
 import {BytesUtils} from "ens-contracts/wrapper/BytesUtils.sol";

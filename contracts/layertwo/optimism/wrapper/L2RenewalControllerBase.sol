@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ~0.8.17;
 
 import {IL2NameWrapper} from "../wrapper/interfaces/IL2NameWrapper.sol";
 import {IL2NameWrapperUpgrade} from "../wrapper/interfaces/IL2NameWrapperUpgrade.sol";

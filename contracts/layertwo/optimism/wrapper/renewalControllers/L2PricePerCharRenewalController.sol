@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ~0.8.17;
 
 import {IL2NameWrapper} from "../interfaces/IL2NameWrapper.sol";
 import {StringUtils} from "ens-contracts/ethregistrar/StringUtils.sol";

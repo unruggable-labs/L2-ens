@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ~0.8.17;
 
 import {IEVMVerifier} from 'evmgateway/evm-verifier/contracts/IEVMVerifier.sol';
 import {StateProof,EVMProofHelper} from 'evmgateway/evm-verifier/contracts/EVMProofHelper.sol';
