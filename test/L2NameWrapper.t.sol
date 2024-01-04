@@ -38,13 +38,21 @@ contract L2NameWrapperTest is Test, GasHelpers {
     );
 
     event NameUpgraded(
-        bytes name,
-        address wrappedOwner,
-        uint32 fuses,
+        bytes32 indexed node,
+        address indexed wrappedOwner,
+        uint32 indexed fuses,
         uint64 expiry,
         address approved,
         bytes extraData
     );
+
+    event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
+
+    event Transfer(bytes32 indexed node, address owner);
+
+    event NewResolver(bytes32 indexed node, address resolver);
+
+    event NewTTL(bytes32 indexed node, uint64 ttl);
 
     event ExtendExpiry(bytes32 node, uint64 expiry);
     
@@ -904,22 +912,40 @@ contract L2NameWrapperTest is Test, GasHelpers {
         // Set the new NameWrapper as the upgraded contract. 
         nameWrapper.setUpgradeContract(INameWrapperUpgrade(address(nameWrapperUpgraded)));
 
-
+        
         // Change the caller to account2.
         vm.stopPrank();
         vm.startPrank(account2);
 
-        /* // @audit - This event check isn't working and I don't know why yet.  
-        vm.expectEmit(true, true, true, false);
+        vm.expectEmit();
+        emit Transfer(
+            node,
+            address(nameWrapperUpgraded)
+        );
+        vm.expectEmit();
+        emit TransferSingle(account2, account2, address(0), uint256(node), 1);
+
+        vm.expectEmit();
+        emit Transfer(
+            node,
+            address(nameWrapperUpgraded)
+        );
+
+        vm.expectEmit();
+        emit NewResolver(node, address(nameWrapperUpgraded));
+
+        vm.expectEmit();
+        emit NewTTL(node, 100);
+
+        vm.expectEmit();
         emit NameUpgraded(
-            "\x03sub\x03abc\x03eth\x00",
-            address(nameWrapper),
-            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL | CANNOT_SET_RESOLVER,
+            node,
+            account2,
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL,
             uint64(block.timestamp) + oneYear,
             address(0),
             bytes("")
         );
-        */
 
         // Upgrade the name to the new contract.    
         nameWrapper.upgrade("\x03sub\x03abc\x03eth\x00", "");

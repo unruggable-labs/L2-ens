@@ -19,7 +19,7 @@ contract L2UpgradedNameWrapperMock is INameWrapperUpgrade {
     }
 
     event NameUpgraded(
-        bytes indexed name,
+        bytes32 indexed node,
         address indexed wrappedOwner,
         uint32 indexed fuses,
         uint64 expiry,
@@ -46,7 +46,7 @@ contract L2UpgradedNameWrapperMock is INameWrapperUpgrade {
         ens.setRecord(node, address(this), address(this), 100);
 
         emit NameUpgraded(
-            name,
+            node,
             wrappedOwner,
             fuses,
             expiry,
