@@ -841,9 +841,6 @@ contract L2NameWrapper is
             CANNOT_TRANSFER | CANNOT_SET_RESOLVER | CANNOT_SET_TTL
         )
     {
-        // Set the record in the registry.
-        ens.setRecord(node, address(this), resolver, ttl);
-
         // Check to see if the name is being burned. 
         if (owner == address(0)) {
 
@@ -855,6 +852,9 @@ contract L2NameWrapper is
         } else {
 
             // The name is NOT being burned.
+
+            // Set the record in the registry.
+            ens.setRecord(node, address(this), resolver, ttl);
 
             // Get the current owner of the name. 
             address oldOwner = ownerOf(uint256(node));

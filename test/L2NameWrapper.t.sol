@@ -31,6 +31,14 @@ error LabelTooLong(string label);
 
 contract L2NameWrapperTest is Test, GasHelpers {
 
+    event NameWrapped(
+        bytes32 indexed node,
+        bytes name,
+        address owner,
+        uint32 fuses,
+        uint64 expiry
+    );
+
     event NameRenewed(
         bytes indexed name,
         uint256 indexed price,
@@ -50,11 +58,17 @@ contract L2NameWrapperTest is Test, GasHelpers {
 
     event Transfer(bytes32 indexed node, address owner);
 
+    event NewOwner(bytes32 indexed node, bytes32 indexed label, address owner);
+
     event NewResolver(bytes32 indexed node, address resolver);
 
     event NewTTL(bytes32 indexed node, uint64 ttl);
 
     event ExtendExpiry(bytes32 node, uint64 expiry);
+
+    event FusesSet(bytes32 indexed node, uint32 fuses);
+
+    event NameUnwrapped(bytes32 indexed node, address owner);
     
     uint64 private constant GRACE_PERIOD = 90 days;
     bytes32 private constant ETH_NODE =
@@ -129,6 +143,28 @@ contract L2NameWrapperTest is Test, GasHelpers {
     function registerAndWrap(address _account, address _approved) internal returns (bytes32 node){
 
         bytes32 parentNode = bytes("\x03abc\x03eth\x00").namehash(0);
+
+        // Check to make sure the NewOwner event is emitted.
+        vm.expectEmit();
+        emit NewOwner(parentNode, keccak256("sub"), _account);
+
+        // Check to make sure the NewResolver event is emitted.
+        vm.expectEmit();
+        emit NewResolver(parentNode, publicResolver);
+
+        // Check to make sure the TransferSingle event is emitted.
+        vm.expectEmit();
+        emit TransferSingle(_account, address(0), _account, uint256(parentNode), 1);
+
+        // Check to make sure the NameWrapped event is emitted.
+        vm.expectEmit();
+        emit NameWrapped(
+            parentNode,
+            "\x03sub\x03abc\x03eth\x00",
+            _account,
+            CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL,
+            uint64(block.timestamp) + oneYear + 1
+        );
 
 
         // Register a subname. 
@@ -1003,6 +1039,9 @@ contract L2NameWrapperTest is Test, GasHelpers {
         
         bytes32 node = registerAndWrap(account, address(0));
 
+        vm.expectEmit();
+        emit FusesSet(node, uint32(CANNOT_SET_TTL | CANNOT_BURN_NAME | PARENT_CANNOT_CONTROL));
+
         // Set fuses using the subname wrapper.
         nameWrapper.setFuses(node, uint16(CANNOT_SET_TTL));
 
@@ -1042,13 +1081,25 @@ contract L2NameWrapperTest is Test, GasHelpers {
         
         bytes32 node = registerAndWrap(account, address(0));
 
-        // Set the record using the subname wrapper.
-        // This will not unwrap the name from the subname wrapper contract. 
+        vm.expectEmit();
+        emit Transfer(node, address(nameWrapper));
+
+        vm.expectEmit();
+        emit NewResolver(node, customResolver);
+
+        vm.expectEmit();
+        emit NewTTL(node, 100);
+
+        vm.expectEmit();
+        emit TransferSingle(account, account, account2, uint256(node), 1);
+
+        // Set the record using the namewrapper.
+        // This will not unwrap the name from the namewrapper contract. 
         nameWrapper.setRecord(
             node, 
             account2, 
             customResolver, 
-            0 
+            100 
         );
 
         // Check to make sure we are still wrapped and the owner is the nameWrapper 
@@ -1056,6 +1107,9 @@ contract L2NameWrapperTest is Test, GasHelpers {
 
         // Check to make sure the resolver is set to the custom resolver.
         assertEq(ens.resolver(node), customResolver);
+
+        // Check to make sure the TTL is set to 100.
+        assertEq(ens.ttl(node), 100);
 
     }
 
@@ -1074,6 +1128,14 @@ contract L2NameWrapperTest is Test, GasHelpers {
             0, 
             uint64(block.timestamp) + oneYear 
         );
+
+        // Check to make sure the event was emitted.
+        vm.expectEmit();
+        emit Transfer(node, address(0));
+
+        // Check to make sure the NameUnwrapped event was emitted.
+        vm.expectEmit();
+        emit NameUnwrapped(node, address(0));
 
         // Set the record using the wrapper.
         // This will not unwrap the name from the subname wrapper contract. 
